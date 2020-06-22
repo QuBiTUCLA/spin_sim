@@ -1,0 +1,66 @@
+function [pop,coh] = solvecla()
+
+options = odeset('RelTol',1e-12,'AbsTol',ones(1,2)*1e-12);
+
+int_rlimit = 200e-6;
+
+[T,Y] = ode45(@calc_direct_timeprop,[0 int_rlimit],[1  0],options);
+
+pop = Y(:,1).';
+coh = Y(:,2).';
+
+figure(10); plot(T,real(pop));
+%figure(11); plot(pop);
+%figure(12); plot(real(pop));
+%figure(12); plot(real(coh));
+%difference between plotting only pop and t,pop?
+
+t=0:1e-9:1e-6;
+
+%%%
+eta = 30; %try
+Omega = 5e6;
+
+Rabi = 10e6;
+T1 = 1; %100e-3; 
+T2 = 20e-6;
+%%%
+
+R = (4*Rabi^2 -(4- 2/3*eta^2*Omega^2) + 2*1i*Omega^2*(1/T1 + 1/T2) + 1/(T1*T2))
+S = (4*Rabi^2 + 1/(T1*T2) + eta^2/2/T1/T2 +(eta^4*Omega/8/T1/(1/T1 + 1/T2)))
+sat = 1/T1/S/T2
+entsat = 1/T1/S*eta^2*Omega/2*imag(1 - eta^2*Omega^2/2/R)
+bewegung = -1/T1/S*eta^2*Omega/2*imag((1- (1-8/(eta^2))*eta^2*Omega^2/2/R)*exp(2*1i*Omega*t)) + 2/T2*real(eta^2*Omega^2/2/R*exp(2*1i*Omega*t));
+analytpop =[sat + entsat+ bewegung];
+
+%figure(44); plot(t,real(analytpop));
+%figure(55); plot(t,analytpop);
+
+% integration function
+
+function dy = calc_direct_timeprop(t,y)
+
+%%%
+w0 = 3e9;
+w = w0; %resonance
+eta = 30; %try
+Omega = 5e6;
+Delta = w0-w + eta*Omega*sin(Omega*t);
+ss = 0.7; %ss is steady-state, related to the steady state pop
+
+Rabi = 10e6;
+T1 = 10; %100e-3; 
+T2 = 20e-6;
+%%%
+
+% Optical Bloch Equations
+
+dy = zeros(2,1);    % a column vector
+
+%y(1) is population of ground state, in my cahier called rho11
+%y(2) is coherence, in my cahier called rho12
+
+dy(1) =  2*Rabi*imag(y(2)) + (1/T1)*(1-y(1)) + ss;
+dy(2) =  1i*Rabi*(1-2*y(1)) - 1i*y(2)*Delta - (1/T2)*y(2);
+
+%for times higher than T1 I cannot bias the population, it's always 50/50

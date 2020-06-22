@@ -1,0 +1,57 @@
+%method found in time series analysis: Univariate and multivariate methods
+%William Wei 
+%section 12.13, p259-262
+
+clear all
+
+load('seriesN.mat')
+
+%figure(1); plot(out_freq,out_sig,'r')
+[sorted_array, ind]  = sort(out_sig,'descend');
+
+T_total = sum(sorted_array);
+N = length(sorted_array);
+
+%this is how you get back out_sig
+% for jj = 1:1:N
+% resort(ind(jj)) = sorted_array(jj);
+% end
+%figure(99) 
+%plot(out_freq,out_sig,'r',out_freq,resort,'b*')
+
+T_vec = [];
+helper = cumsum(sorted_array);
+
+for k=1:1:N
+    k/N
+    T_vec(k) = sorted_array(k)/(T_total - helper(k));
+    p_vec(k) = (N - (k-1))*(1-T_vec(k))^(N-k);
+end
+
+for jj = 1:1:N
+p_vec_ord(ind(jj)) = p_vec(jj);
+end
+
+pvalue = 1;
+
+for kk = 1:1:N
+   if p_vec_ord(kk) > pvalue
+      p_vec_ord(kk) = NaN; 
+   end
+end
+
+figure(440)
+subplot(2,1,1)
+plot(out_freq/1e6,out_sig,'b')
+axis([14.5 19.5 0 1.6])
+subplot(2,1,2)
+plot(out_freq/1e6,log(p_vec_ord),'r')
+hold on
+hline =refline([0 log(0.05)]);
+set(hline,'Color','k')
+set(hline,'LineStyle','-.')
+hold off
+axis([14.5 19.5 -35 -0])
+ylabel('ln(p)','FontSize',20)
+xlabel('Frequency (MHz)','FontSize',20)
+

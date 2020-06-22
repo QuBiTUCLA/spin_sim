@@ -1,0 +1,155 @@
+%% Setup the Hamiltonian
+% construct the relevant spins
+NV = Spin(1);
+NV.Name = 'NV';
+
+Nitrogen = Spin(1);
+Nitrogen.Name = 'Nitrogen';
+
+BField = Field([0 0 29e6/2.803448083560241e+06]); % field in Gauss
+BField.Name = 'B';
+
+% create a new Hamiltonian
+Hnat = Hamiltonian();
+
+% add the spins to the Hamiltonian
+Hnat.addSpins(NV,Nitrogen);
+
+% add the static field
+Hnat.addField(BField);
+
+% create the interactions
+
+% Zero Field Splitting (Hz)
+ZFS_NV = diag([0 0 2.87e9]);
+Hnat.createInteraction('NV',[],'ZFS',ZFS_NV);
+
+% Nuclear Quadrupole (Hz)
+% NitrogenQuad = diag([1e2 0 -5e6]*2/3);
+% Hnat.createInteraction('Nitrogen',[],'ZFS',NitrogenQuad);
+
+% Nuclear Zeeman (Hz/G)
+% gammaN14 = 3.0766e6/1e4*eye(3);
+% Hnat.createInteraction('Nitrogen','B','Zeeman',gammaN14);
+
+% Electron Zeeman (Hz/G)
+gub = 1e-4*(9.27400915e-24/6.62606896e-34)*2.003*eye(3);
+Hnat.createInteraction('NV','B','Zeeman',gub);
+
+% add hyperfine (Hz)
+A_NV_N = diag([2.1 2.1 2.3]*1e6);
+Hnat.createInteraction('NV','Nitrogen','Hyperfine',A_NV_N);
+
+% use the defined interactions to create a full, exact Hamiltonian
+Hnat.createFullHamiltonian();
+
+% take the secular approximaiton of the Hamiltoninan with energy define by
+% the NV
+Hnat.SecularHamiltonian = Hnat.createZeroHamiltonian('NV');
+
+% Define the interaction/rotating frame
+Hnat.InteractionFrameOperator = Hnat.expandOperator('NV',NV.Sz*NV.Sz);
+Hnat.InteractionFrameEnergy = 2.8995e+09;
+
+Hnat.toggleInteractionFrame(Hnat.SecularHamiltonian);
+
+
+%% Run some simultions stuff
+
+silly = simulator();
+
+silly.Hnat = Hnat.InteractionHamiltonian;
+silly.ControlMats{1} = Hnat.expandOperator('NV',NV.Sx);
+silly.ControlMats{2} = Hnat.expandOperator('NV',NV.Sy);
+
+wnut = (1/sqrt(2))*(1/4/32e-9);
+
+%Do some simulations
+results = [];
+rhoin = kron([0 0 0;0 1 0;0 0 0],eye(3)/3);
+
+measurement = kron([0 0 0;0 1 0;0 0 0],eye(3));
+
+powerlist = linspace(0.01,1,150);
+for tmpPower = powerlist
+    
+    silly.ControlFields = zeros(2,3);
+    silly.ControlFields(1,:) = [0 0 0];
+    silly.ControlFields(2,:) = [400e-9 1.045*wnut*tmpPower 0];
+    [U,rhoout] = silly.unitary(rhoin);
+    results(end+1) = real(trace(measurement*rhoout));
+    
+end
+
+figureHs = [];
+figureHs(end+1) = figure;
+plot(powerlist,results,'-')
+hold on
+plot(powerlist,s,'r*-')
+xlabel('Pulse Amplitude');
+legend('Simulation','Experiment');
+
+%% Do some fitting to try and extract the nonlinearity
+
+tmpFun = @(x)(Fgoal(x,1.045*wnut,silly,s));
+
+[goodparams,resnorm] = lsqnonlin(tmpFun,[1.75 -0.75 0 0 0 ])
+actualPower = zeros(1,150);
+x = linspace(0.01,1,150);
+for paramct = 1:length(goodparams)
+    actualPower = actualPower + goodparams(paramct)*x.^paramct;
+end
+
+% actualPower = zeros(length(powerlist),1);
+% actualPower(end) = 1;
+% 
+% for ct = length(powerlist)-1:-1:1
+%    
+%     tmpRange = linspace(0.98,1.02,20)*actualPower(ct+1);
+%     
+%     results = [];
+%     
+%     for tmpPower = tmpRange
+%         silly.ControlFields = zeros(2,3);
+%         silly.ControlFields(1,:) = [0 0 0];
+%         silly.ControlFields(2,:) = [400e-9 1.045*wnut*tmpPower 0];
+%         [U,rhoout] = silly.unitary(rhoin);
+%         results(end+1) = real(trace(measurement*rhoout));
+%     end
+%     
+%     Find which is the closest
+%     tmpVar = abs(results-s(ct));
+%     actualPower(ct) = min(tmpRange(tmpVar == min(tmpVar)),actualPower(ct+1));
+%     
+% end
+
+
+
+figureHs(end+1) = figure;
+plot(powerlist,powerlist);
+hold on
+plot(powerlist,actualPower,'r');
+title('Non-Linear Fitted Amplitude');
+xlabel('Pulse Amplitude');
+
+
+actualPower = 1.75*x-0.75*x.^2;
+
+results = [];
+for tmpPower = actualPower
+    silly.ControlFields = zeros(2,3);
+    silly.ControlFields(1,:) = [0 0 0];
+    silly.ControlFields(2,:) = [400e-9 1.045*wnut*tmpPower 0];
+    [U,rhoout] = silly.unitary(rhoin);
+    results(end+1) = real(trace(measurement*rhoout));
+end
+
+figureHs(end+1) = figure;
+plot(powerlist,results,'-')
+hold on
+plot(powerlist,s,'r*-')
+xlabel('Pulse Amplitude');
+title('Non-Linear Amplitude Simulation');
+legend('Simulation','Experiment');
+
+

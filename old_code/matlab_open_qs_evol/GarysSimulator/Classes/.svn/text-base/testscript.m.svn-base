@@ -1,0 +1,167 @@
+%Script to test the simulator
+
+%clear classes
+
+%% Setup the Hamiltonian
+% construct the relevant spins
+NV = Spin(1);
+NV.Name = 'NV';
+
+Nitrogen = Spin(1);
+Nitrogen.Name = 'Nitrogen';
+
+BField = Field([0e6 0 30e6]*(1/2.803448083560241e+06)); % field in Gauss
+BField.Name = 'B';
+
+% create a new Hamiltonian
+Hnat = Hamiltonian();
+
+% add the spins to the Hamiltonian
+Hnat.addSpins(NV,Nitrogen);
+
+% add the static field
+Hnat.addField(BField);
+
+% create the interactions
+
+% Zero Field Splitting (Hz)
+ZFS_NV = diag([0 0 2.87e9]);
+Hnat.createInteraction('NV',[],'ZFS',ZFS_NV);
+
+% Nuclear Quadrupole (Hz)
+% NitrogenQuad = diag([1e2 0 -5e6]*2/3);
+% Hnat.createInteraction('Nitrogen',[],'ZFS',NitrogenQuad);
+
+% Nuclear Zeeman (Hz/G)
+% gammaN14 = 3.0766e6/1e4*eye(3);
+% Hnat.createInteraction('Nitrogen','B','Zeeman',gammaN14);
+
+% Electron Zeeman (Hz/G)
+gub = 1e-4*(9.27400915e-24/6.62606896e-34)*2.003*eye(3);
+Hnat.createInteraction('NV','B','Zeeman',gub);
+
+% add hyperfine (Hz)
+% A_NV_N = diag([2.1 2.1 2.3]*1e6);
+% Hnat.createInteraction('NV','Nitrogen','Hyperfine',A_NV_N);
+
+% use the defined interactions to create a full, exact Hamiltonian
+Hnat.createFullHamiltonian();
+
+% take the secular approximaiton of the Hamiltoninan with energy define by
+% the NV
+Hnat.SecularHamiltonian = Hnat.createZeroHamiltonian('NV');
+
+% Define the interaction/rotating frame
+Hnat.InteractionFrameOperator = Hnat.expandOperator('NV',NV.Sz*NV.Sz);
+Hnat.InteractionFrameEnergy = 2.897e+09;
+
+Hnat.toggleInteractionFrame(Hnat.SecularHamiltonian);
+
+
+%% Run some simulation stuff
+
+silly = simulator();
+
+silly.Hnat = Hnat.InteractionHamiltonian;
+silly.ControlMats{1} = Hnat.expandOperator('NV',NV.Sx);
+silly.ControlMats{2} = Hnat.expandOperator('NV',NV.Sy);
+
+wnut = (1/sqrt(2))*(1/4/32e-9);
+
+%Do some simulations
+results = [];
+rhoin = kron([0 0 0;0 1 0;0 0 0],eye(3)/3);
+
+measurement = kron([0 0 0;0 1 0;0 0 0],eye(3));
+
+pulselist = 0:25e-9:12e-6;
+loops = 0:100;
+
+
+silly.ControlFields = zeros(1,3);
+silly.ControlFields(1,:) = [25e-9 0.99*wnut 0];
+tmpU = silly.unitary(rhoin);
+
+% silly.ControlFields(1,:) = [32e-9 0 -wnut];
+% Um90 = silly.unitary(rhoin);
+% 
+% silly.ControlFields = zeros(3,3);
+% silly.ControlFields(1,:) = [600e-9 0 0];
+% silly.ControlFields(2,:) = [64e-9 wnut 0];
+% silly.ControlFields(3,:) = [600e-9 0 0];
+% tmpU = silly.unitary(rhoin);
+% Ucpmg = tmpU^2;
+
+for tmppulse = 0:length(pulselist)-1
+    
+%     silly.ControlFields = zeros(3,3);
+%     silly.ControlFields(1,:) = [32e-9 0 wnut];  
+%     silly.ControlFields(2,:) = [tmppulse wnut/3 0];
+%     silly.ControlFields(3,:) = [32e-9 0 wnut];
+
+%    loopct = 0;
+%    for loopct = 0:loopnum-1
+%         silly.ControlFields(1+3*loopct,:) = [10e-9 0 0];
+%         silly.ControlFields(2+3*loopct,:) = [30e-9 wnut 0];
+%         silly.ControlFields(3+3*loopct,:) = [10e-9 0 0];
+%    end
+    
+%tmpU = silly.unitary(rhoin);
+     rhoout = tmpU^tmppulse*rhoin*(tmpU^tmppulse)';
+    results(end+1) = real(trace(measurement*rhoout));
+    
+end
+figureH(3) = figure;
+plot(pulselist,results,'*-')
+xlabel('Rabi Pulse Length')
+hold on
+y = Exp.Counter.AveragedData;
+s = (y(:,3)-y(:,2))./(y(:,1)-y(:,2));
+plot(pulselist,s,'r*-');
+figureH(4) = figure;
+[spec,freqs] = positiveFFT(results - mean(results),1/25e-9);
+plot(freqs/1e6,abs(spec));
+xlabel('Frequency (MHz)');
+title('Simulated Rabi Power Spectrum');
+
+
+
+
+% hold on
+% plot(loops(2:2:end),results(2:2:end),'r')
+
+% fitmodel = fittype('A*cos(2*pi*wnut*t)*exp(-t/T2)+C','ind','t','coeff',{'A','wnut','T2','C'});
+% opts = fitoptions(fitmodel);
+% opts.StartPoint = [0.5,8e6,1,0.5];
+% [fitresult,gof] = fit(pulselist',results',fitmodel,opts);
+% disp(fitresult);
+% hold on;
+% plot(fitresult);
+
+
+% %384.3 318.6 24.3 
+% for loopnum = 0:1:40;
+%     
+%     silly.ControlFields = zeros(3*loopnum+1,3);
+%     silly.ControlFields(1,:) = [0 0 0];
+%     for loopct = 0:loopnum-1
+%         silly.ControlFields(1+3*loopct,:) = [136e-9 wnut 0];
+%         silly.ControlFields(2+3*loopct,:) = [114e-9 -wnut 0];
+%         silly.ControlFields(3+3*loopct,:) = [8e-9 wnut 0];
+%     end
+%     [U,rhoout] = silly.unitary(rhoin);
+%     results(end+1) = real(trace(measurement*rhoout));
+%     
+% end
+% 
+% figure
+% plot(0:40,results,'*')
+
+
+
+%  [spec,freqs] = positiveFFT(results-mean(results),1/5e-9);
+%  figure
+%  plot(freqs/1e6,abs(spec)); 
+%  
+
+

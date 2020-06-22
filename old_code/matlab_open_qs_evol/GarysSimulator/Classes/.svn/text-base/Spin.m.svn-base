@@ -1,0 +1,31 @@
+classdef Spin < InteractionObject 
+    
+    properties
+        SpinAngularMomentum
+        Sx
+        Sy
+        Sz
+        Si
+        Sp
+        Sm
+    end
+    
+    methods
+        %Constructor
+        function obj = Spin(SpinAngularMomentum)
+            obj.SpinAngularMomentum = SpinAngularMomentum;
+            obj.Sx = CreateCartesianOperatorMatrix(SpinAngularMomentum,'X');
+            obj.Sy = CreateCartesianOperatorMatrix(SpinAngularMomentum,'Y');
+            obj.Sz = CreateCartesianOperatorMatrix(SpinAngularMomentum,'Z');
+            obj.Si = CreateCartesianOperatorMatrix(SpinAngularMomentum,'I');
+            obj.Sp = CreateCartesianOperatorMatrix(SpinAngularMomentum,'P');
+            obj.Sm = CreateCartesianOperatorMatrix(SpinAngularMomentum,'M');
+        end
+        
+        %Size of hilbert space
+        function dimension = dimH(Spin)
+            dimension = 2*Spin.SpinAngularMomentum +1;
+        end
+        
+    end
+end

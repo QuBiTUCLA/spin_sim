@@ -1,0 +1,22 @@
+function [output] = partialtrace(input,dim)
+%Give the partial trace of a matrix. Output is thus a matrix
+%Input: matrix to trace and dimension of partial trace
+
+if(size(input,1) ~= size(input,2))
+    ERROR('Matrix input must be square')
+end
+dimEnv = size(input,1)/dim;
+if(dimEnv ~= round(dimEnv))
+    ERROR('Dimension of input matrix must be a multiple of dim')
+end
+
+output = zeros(dim);
+
+for k=1:dim
+    for i=1:dim
+        output(k,i) = trace(input(k*dimEnv:k*dimEnv+dimEnv-1,i*dimEnv:i*dimEnv+dimEnv-1));
+    end
+end
+
+end
+

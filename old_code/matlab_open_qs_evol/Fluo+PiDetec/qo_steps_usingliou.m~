@@ -1,0 +1,162 @@
+% States sorted by increasing energy
+N = 7;
+
+bs = cell(N, 1);
+for k = 1:N
+	bs{k} = basis(N, k);
+end
+
+%indices
+%1 is state 0g
+%2 is state -1g
+%3 is state 1g
+%4 is state M
+%5 is state 0e
+%6 is state -1e
+%7 is state 1e
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%detuning positive is below res
+delta0m1 = 0e6; 
+delta01 = 0e6;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Stirap before
+is_laser_on = 1;
+
+tinit = 0;%tinit supposed to be 0
+tdetection = 10e-9;
+tstep = 0.1e-9;
+
+tlist = tinit:tstep:tdetection;
+
+%%%%here is the shape of the mw
+%gaussian
+%distance = tdetection/8;
+%initoffset = (tdetection - distance)/2;      
+%%width = (0.2e-6)/sqrt(8*log(2)); %new
+%width = (distance)/sqrt(8*log(2)); %original
+
+%mw0m1_arr = 40e6*exp(-(tlist-initoffset).^2/2/width^2); %first one
+%mw01_arr = 40e6*exp(-(tlist-initoffset-distance).^2/2/width^2); %second one
+
+
+
+time_to_switch_on_laser = 20e-9;
+distance = 0.1e-9;
+initoffset = 2.5e-9;
+width = 2e-9;
+%width = (distance)/sqrt(8*log(2)); %original
+
+mw0m1_arr = 0*540e6*exp(-(tlist-initoffset).^2/2/width^2); %first one
+mw01_arr = 100e6*exp(-(tlist-initoffset-distance).^2/2/width^2); %second one
+
+my_ind = min(find(tlist>=3e-9));
+mw01_arr(my_ind:end) = 0;
+
+
+%cst mw
+%mw0m1_arr = 20e6 * ones(1, length(tlist));
+%mw01_arr = 0*20e6 * ones(1, length(tlist));
+
+%%%init at 0g
+%rho = bs{1}*bs{1}';
+%init at +1g
+rho = bs{3}*bs{3}';
+
+rho = 0.1*bs{1}*bs{1}' + 0.9*bs{3}*bs{3}' + (0.2 + 0.1*i)*(bs{1}*bs{3}' + bs{3}*bs{1}') + (0.15 + 0.05*i)*(bs{1}*bs{2}' + bs{2}*bs{1}');
+%init at -1g
+%rho = bs{2}*bs{2}';
+
+pop = {};
+
+is_laser_on = 0;
+
+for k=1:1:length(tlist)
+        
+if tlist(k)>=time_to_switch_on_laser
+    is_laser_on = 1;
+end;
+
+rho = ode2es(Liou_NV_micro(mw0m1_arr(k), delta0m1, mw01_arr(k), delta01, is_laser_on), rho);
+soma = 0;
+
+for aux=1:1:7
+    for aux2=1:1:7
+        hlp = (esval(expect(bs{aux}*bs{aux2}', rho),(tinit + (k-1)*tstep):tstep:(tinit + (k)*tstep)));
+        pop{aux,aux2}(k) = hlp(end);
+        soma = soma + pop{aux,aux2}(k)*bs{aux}*bs{aux2}';
+    end
+end
+
+
+%cellfun(@(x) x(end), pop)
+% rho is not rho dagger
+
+
+rho = soma;
+
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %Stirap during laser
+% is_laser_on = 1;
+% 
+% tinit = 0;%tinit supposed to be 0
+% tdetection = 100e-9; % 1000e-9; %500e-9;
+% tstep = 1e-9;
+% 
+% tlist = tinit:tstep:tdetection;
+% 
+% %%%%here is the shape of the mw
+% %gaussian
+% distance = tdetection/8;
+% initoffset = (tdetection - distance)/2;      
+% %width = (0.2e-6)/sqrt(8*log(2)); %new
+% width = (distance)/sqrt(8*log(2)); %original
+% 
+% mw0m1_arr = 40e6*exp(-(tlist-initoffset).^2/2/width^2); %first one
+% mw01_arr = 40e6*exp(-(tlist-initoffset-distance).^2/2/width^2); %second one
+
+%cst mw
+%mw0m1_arr = 20e6 * ones(1, length(tlist));
+%mw01_arr = 0*20e6 * ones(1, length(tlist));
+
+%%%init rho is what comes out of the first
+
+% pop2 = {};
+% 
+% for k=1:1:length(tlist)
+%         
+% rho = ode2es(Liou_NV_micro(mw0m1_arr(k), delta0m1, mw01_arr(k), delta01, is_laser_on), rho);
+% soma = 0;
+% 
+% for aux=1:1:7
+%     for aux2=1:1:7
+%         hlp = 0;
+%         hlp = (esval(expect(bs{aux}*bs{aux2}', rho),(tinit + (k-1)*tstep):tstep:(tinit + (k)*tstep)));
+%     pop2{aux,aux2}(k) = hlp(end);
+%     soma = soma + pop2{aux,aux2}(k)*bs{aux}*bs{aux2}';
+%     end
+% end
+% 
+% rho = soma;
+% 
+% end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+plot(tlist, [real(pop{1,1})], 'b',tlist, [real(pop{2,2})], 'r',tlist, [real(pop{3,3})], 'k',tlist, [real(pop{4,4})],'g-.',tlist,[real(pop{5,5})],'b--',tlist,[real(pop{6,6}) ],'r--',tlist,[real(pop{7,7})],'k--');
+%plot(tlist, [real(pop{1,1}) real(pop2{1,1})], 'b',tlist, [real(pop{2,2}) real(pop2{2,2})], 'r',tlist, [real(pop{3,3}) real(pop2{3,3}) ], 'k',tlist, [real(pop{4,4}) real(pop2{4,4}) ],'g-.',tlist,[real(pop{5,5}) real(pop2{5,5}) ],'b--',tlist,[real(pop{6,6}) real(pop2{6,6}) ],'r--',tlist,[real(pop{7,7}) real(pop2{7,7}) ],'k--');
+legend('0g', '-1g', '1g', 'M', '0e','-1e','1e');
+hold on;
+cut = 1;
+plot(tlist(1:cut:end), mw01_arr(1:cut:end)/max(mw01_arr), 'd-', tlist(1:cut:end), mw0m1_arr(1:cut:end)/max(mw0m1_arr), 's-');
+plot(tlist, real(pop{1,3}), 'ro-', tlist, imag(pop{1,3}), 'yo-');
+plot(tlist, real(pop{1,2}), 'rd-', tlist, imag(pop{1,2}), 'yd-');

@@ -1,0 +1,69 @@
+%Class to contain simulation methods
+
+classdef simulator
+    
+    properties
+        Hnat
+        Lindblads
+        ControlFields
+        ControlMats
+        
+    end
+    
+    
+    methods
+        
+        %Constructor
+        function obj = simulator()
+        end
+        
+        %Function to do a unitary simulation
+        function [U,rho] = unitary(obj,rhoin)
+            
+            %First compress the sequence 
+            sequence = obj.compressSequence(obj.ControlFields);
+            
+            %Now loop over everytime step
+            U = eye(size(obj.Hnat));
+            
+            for timect = 1:size(sequence,1)
+                HTOT = obj.Hnat;
+                for controlct = 2:size(obj.ControlFields,2)
+                    HTOT = HTOT + sequence(timect,controlct)*obj.ControlMats{controlct-1};
+                end
+                U = expm(-1i*2*pi*sequence(timect,1)*HTOT)*U;
+            end
+            
+            
+            rho = U*rhoin*U';
+        end
+            
+        
+    end
+    
+    
+    methods(Static)
+        %Function to compress a control field sequence
+        function sequenceout = compressSequence(sequencein)
+            
+            %Simulation helper function which compresses the quadratures of a sequence
+            %first column time, second column X quadrature and third column Y quadrature.
+            
+            if(size(sequencein,1) == 1)
+                sequenceout = sequencein;
+            else
+                changepoints = find(sum(diff(sequencein),2));
+                changepoints = [1; changepoints+1; size(sequencein,1)+1];
+                
+                sequenceout = zeros(length(changepoints)-1,3);
+                
+                for changect = 1:1:length(changepoints)-1
+                    sequenceout(changect,1) = sum(sequencein(changepoints(changect):changepoints(changect+1)-1,1));
+                    sequenceout(changect,2:3) = sequencein(changepoints(changect),2:3);
+                end
+            end
+        end
+           
+    end
+        
+end

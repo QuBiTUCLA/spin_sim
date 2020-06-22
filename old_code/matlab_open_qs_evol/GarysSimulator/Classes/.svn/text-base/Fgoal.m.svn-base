@@ -1,0 +1,25 @@
+function difference = Fgoal(params,wnut,silly,goodresult)
+
+%Create the power function
+powerlist = zeros(1,150);
+x = linspace(0.01,1,150);
+for paramct = 1:length(params)
+    powerlist = powerlist + params(paramct)*x.^paramct;
+end
+
+rhoin = kron([0 0 0;0 1 0;0 0 0],eye(3)/3);
+
+measurement = kron([0 0 0;0 1 0;0 0 0],eye(3));
+
+results = zeros(150,1);
+powerct = 1;
+for tmpPower = powerlist
+    silly.ControlFields = zeros(2,3);
+    silly.ControlFields(1,:) = [0 0 0];
+    silly.ControlFields(2,:) = [400e-9 wnut*tmpPower 0];
+    [U,rhoout] = silly.unitary(rhoin);
+    results(powerct) = real(trace(measurement*rhoout));
+    powerct = powerct+1;
+end
+
+difference = goodresult-results; 
