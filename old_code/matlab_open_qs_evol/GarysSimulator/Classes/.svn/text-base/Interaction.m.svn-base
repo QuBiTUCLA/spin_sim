@@ -1,0 +1,95 @@
+classdef Interaction < handle
+    
+    properties
+        Type
+        Object1
+        Object2
+        Tensor
+        Matrix
+    end
+    
+    methods
+        function myInt = Interaction(varargin)
+            if nargin == 0;
+                myInt;
+            end
+            if nargin >=1,
+                myInt.Object1 = varargin{1};
+            end
+            
+            if nargin >= 2,
+                myInt.Object2 = varargin{2};
+            end
+            if nargin >=3,
+                myInt.Type = varargin{3};
+            end
+                
+            if nargin >=3,
+                myInt.Tensor = varargin{4};
+            end
+       
+        end
+        
+        function myInt = setTensor(myInt,T)
+            myInt.Tensor = T;
+        end
+        
+        function myInt = setType(myInt,type)
+            myInt.Type = type;
+        end
+        
+        function createMatrixForm(myInt)
+            switch myInt.Type
+                case'ZFS'
+                    myInt.Matrix = CreateZFS(myInt);
+                case 'Zeeman'
+                    myInt.Matrix = CreateZeeman(myInt);
+                case 'Hyperfine'
+                    myInt.Matrix = CreateHyperfine(myInt);
+                otherwise
+                    error('No Function for creating matrix of interaction type: %s',myInt.Type);
+            end
+            
+        end
+        
+        function M = CreateZFS(myInt)
+            % error check to see if Spin is greater than 1/2
+            if myInt.Object1.SpinAngularMomentum < 1,
+                error('Zero Field Splittings only occur for spins S > 1/2');
+            end
+            spinVec = {myInt.Object1.Sx myInt.Object1.Sy myInt.Object1.Sz};
+            M = zeros(myInt.Object1.dimH);
+            for ct1 = 1:3
+                for ct2 = 1:3
+                    M = M + spinVec{ct1}*myInt.Tensor(ct1,ct2)*spinVec{ct2};
+                end
+            end
+        end
+
+        function M = CreateZeeman(myInt)
+            
+            spinVec = {myInt.Object1.Sx myInt.Object1.Sy myInt.Object1.Sz};
+            M = zeros(myInt.Object1.dimH);
+            for ct1 = 1:3
+                for ct2 = 1:3
+                    M = M + myInt.Object2.FieldVector(ct1)*myInt.Tensor(ct1,ct2)*spinVec{ct2};
+                end
+            end
+        end
+        
+        
+        function M = CreateHyperfine(myInt)
+            spinVec1 = {myInt.Object1.Sx myInt.Object1.Sy myInt.Object1.Sz};
+            spinVec2 = {myInt.Object2.Sx myInt.Object2.Sy myInt.Object2.Sz};
+            
+            M = zeros(myInt.Object1.dimH*myInt.Object2.dimH);
+            for ct1 = 1:3
+                for ct2 = 1:3
+                    M = M + myInt.Tensor(ct1,ct2)*kron(spinVec1{ct1},spinVec2{ct2});
+                end
+            end
+                   
+        end
+    
+    end
+end

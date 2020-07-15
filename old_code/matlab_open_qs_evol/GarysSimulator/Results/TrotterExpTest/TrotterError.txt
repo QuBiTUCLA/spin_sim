@@ -1,0 +1,72 @@
+TROTTER 2nd ORDER IS SAME WITH SYMMETRIZATION OF TROTTER PRODUCT
+
+Unitary calculation to test expm vs trotter product -> accuracy vs trotter number
+1000 unitary calculation average over 10 different pulses
+
+CODE:
+
+clear all;
+%Load Data
+load('HnatData.mat') %Hamiltonian from simulator, variable HnatData
+
+%Load Settings
+SpGrapeSettings; %Prepare all settings, get 'params'
+
+%% Loading propagator
+
+%Prepare propagator
+propagator = SpPropagatorObj();
+propagator.TimeStep = params.timeStep;
+
+maxHnatValues = 1/(10*params.timeStep*params.maxpLength);
+HnatData.RotatingMatrix(abs(HnatData.RotatingMatrix) < maxHnatValues) = 0;
+%Above line for good sparse matrix, kill off too slow values
+propagator.Hnat = sparse(HnatData.RotatingMatrix);
+propagator.TimeLength = params.maxpLength;
+
+for i=1:length(params.ControlMats)
+    propagator.ControlMats{i} = sparse(params.ControlMats{i});
+end
+propagator.rhoIn = sparse(params.rhoin);
+
+%% Start Expm vs Trotter expansion Test
+%Accuracy vs trotter number
+maxtrot = 20;
+maxtrial = 10;
+TrotterError = zeros(maxtrot,1);
+for trial = 1:maxtrial
+    trial
+    
+    currentPulse = PulseObj([length(propagator.ControlMats) params.maxpLength]);
+    currentPulse.Pulse = currentPulse.makeRandomPulse(0.1,params.maxPower);
+    propagator.ControlFields = currentPulse;
+    
+    for trotter=1:maxtrot
+        trotter
+        propagator.precalculation(2^trotter);
+
+        [Utrot,~]=propagator.unitary();
+        [Uexp,~]=propagator.unitary2();
+
+        err = 0;
+        for ctTime=1:length(Utrot)
+            err = err+abs(1-trace(Uexp{ctTime}'*Utrot{ctTime}/length(Utrot{ctTime})))^2;
+        end
+        TrotterError(trotter)= TrotterError(trotter) + log(err);
+    end
+end
+TrotterError = TrotterError/maxtrial;
+
+PARAMS
+%pLength-Number of timesteps min:step:max
+%timeStep-Length of each time step
+params.maxpLength = 1000;
+params.pLengthStep = 50;
+params.minpLength = 1000; %Must be larger than 2
+params.timeStep = 1e-9; %of the order of oscillations (1e-9 minimum experimental pulse generator 
+%+ RWA resonance freq max)
+
+%Maximum power
+params.maxPower = 1e7; %5e6-1e7 maximum experimental power in Hz, must be positive
+
+params.ControlMats{1} = HnatData.expandOperator('NV',NV.Sx);

@@ -1,0 +1,70 @@
+NV + Nitrogen
+Fidelity: 0.99222
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%% Define all parameters %%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%Reset the params structure
+params = [];
+
+%Methods
+params.optMethod = 'BFGS'; %Optimization methods: 'Gradient', 'Conjugate', 'BFGS'
+params.optType = 'Transfer'; %Optimization types :'Unitary', 'Transfer'
+
+%pLength-Number of timesteps min:step:max
+%timeStep-Length of each time step
+params.maxpLength = 329;
+params.pLengthStep = 1;
+params.minpLength = 328; %Must be larger than 2
+params.timeStep = 1e-9; %of the order of oscillations (1e-9 minimum experimental pulse generator)
+
+%Maximum power
+params.maxPower = 1e7; %5e6-1e7 maximum experimental power in Hz, must be positive
+params.powerGradPenalty = 0.1;
+
+%Some parameters for the random guess 
+%initPulseScale-Max intensity of the random guess for RF pulse
+%randPower-How random is the initial pulse [0,1]
+params.initPulseScale = params.maxPower/2;
+params.randPower = 0.1;
+
+%initStepSize-Initial stepsize
+%minstepInterval-Minimum section interval (if we're not moving anywhere we should stop searching)
+params.initStepSize = 2; %There is a slow decay with count so can start high(ie > 1)
+params.minStepInterval = 1e-1;
+
+%Desired fidelity for the unitary (this is the trace squared fidelity
+params.fidelity = 0.999;
+params.improvechk = 0;%e-1; %Tolerance for improving DIRECTION VARIATION, ie gradient=0, in percent
+params.lengthImprov = -1; %This condition stops the length loop if the fidelity
+%starts decreasing more then this value (negative, -1 to disable)
+
+%Control Matrix
+NV = Spin(1);
+params.ControlMats{1} = HnatData.expandOperator('NV',NV.Sx);
+
+%Input state
+rhoin = HnatData.expandOperator('NV',diag([0 1 0]));
+params.rhoin = rhoin/norm(rhoin,'fro'); %PROBLEM in norm for unitary in WatchSpins
+clear rhoin
+
+% Output states (many goal possible)
+rhogoal = HnatData.expandOperator('NV',diag([1 0 0]));
+params.opGoal{1} = rhogoal/norm(rhogoal,'fro');
+clear rhogoal
+
+% %Input state
+% rhoin = kron(kron(diag([0 1 1]),eye(3)),diag([1 0]));
+% params.rhoin = rhoin/norm(rhoin,'fro'); %PROBLEM in norm for unitary in WatchSpins
+% clear rhoin
+% 
+% % Operator goal
+% gate = Gates();
+% % params.opGoal{1} = gate.Rotation2(HnatData,'NV',0,pi,0,0);
+% params.opGoal{1} = gate.CNOT(HnatData,'NV','Carbon1');
+
+params.watchSpin = 'NV';
+
+
+

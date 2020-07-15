@@ -1,0 +1,11 @@
+C=2.905
+C=3.859
+
+%Hamiltonian
+params.NVSpinNumber = 3/4;
+params.numberOfCarbon = 2;
+params.carbonDistRadius = 4;
+params.Trotter = 2^5;
+
+
+

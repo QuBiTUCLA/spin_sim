@@ -1,0 +1,77 @@
+NV + Nitrogen + 1 Carbon
+Fidelity: 0.95379
+Total computing duration: 612.34 | Step count: 167
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%% Define all parameters %%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%Reset the params structure
+params = [];
+
+%Methods
+params.optMethod = 'Gradient'; %Optimization methods: 'Gradient', 'Conjugate', 'BFGS'
+params.optType = 'Unitary'; %Optimization types :'Unitary', 'Transfer'
+
+%pLength-Number of timesteps min:step:max
+%timeStep-Length of each time step
+params.maxpLength = 2000;
+params.pLengthStep = 1;
+params.minpLength = 2000; %Must be larger than 2
+params.timeStep = 1e-9; %of the order of oscillations (1e-9 minimum experimental pulse generator)
+
+%Maximum power
+params.maxPower = 1e7; %5e6-1e7 maximum experimental power in Hz, must be positive
+params.powerGradPenalty = 1;
+
+%Some parameters for the random guess 
+%initPulseScale-Max intensity of the random guess for RF pulse
+%randPower-How random is the initial pulse [0,1]
+params.randomPulseFlag = 0; %Disable random
+params.initPulseScale = params.maxPower/2;
+params.randPower = 0.1;
+
+%initStepSize-Initial stepsize
+%minstepInterval-Minimum section interval (if we're not moving anywhere we should stop searching)
+params.initStepSize = 0.5; %Decay with the number of iteration step 
+params.minStepInterval = 1e-1; %In percent of initStepSize
+
+%Desired fidelity for the unitary (this is the trace squared fidelity
+params.fidelity = 0.99;
+params.improvechk = 0;%e-1; %Tolerance for improving DIRECTION VARIATION, ie gradient=0, in percent
+params.lengthImprov = -1; %This condition stops the length loop if the fidelity
+%starts decreasing more then this value (negative, -1 to disable)
+
+%Control Matrix
+NV = Spin(1);
+Carbon = Spin(1/2);
+%Maxpower should be divided by number of controlMatS?
+params.ControlMats{1} = HnatData.expandOperator('NV',NV.Sx);
+params.maxPower = params.maxPower/length(params.ControlMats);
+
+% %Input state
+% rhoin = HnatData.expandOperator('NV',diag([0 1 0]));
+% params.rhoin = rhoin/norm(rhoin,'fro');
+% clear rhoin
+% 
+% % Output states (many goal possible)
+% rhogoal = HnatData.expandOperator('NV',diag([1 0 0]));
+% params.opGoal{1} = rhogoal/norm(rhogoal,'fro');
+% clear rhogoal
+
+%Input state
+rhoin = kron(kron(diag([0 1 1]),eye(3)),diag([1 0])); %NV/Nitrogen/Carbon
+params.rhoin = rhoin/norm(rhoin,'fro');
+clear rhoin
+
+% Operator goal
+gate = Gates();
+% params.opGoal{1} = gate.Rotation2(HnatData,'NV',0,pi,0,0);
+params.opGoal{1} = gate.CNOT(HnatData,'NV','Carbon1');
+
+%Figure to be shown (state evolution)
+params.watchSpin{1} = 'NV';
+params.watchSpin{2} = 'Nitrogen';
+params.watchSpin{3} = 'Carbon1';
+
+
+

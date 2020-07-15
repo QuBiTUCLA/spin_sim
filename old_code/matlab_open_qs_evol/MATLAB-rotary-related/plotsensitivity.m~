@@ -1,0 +1,60 @@
+IntT = 56e-9*[50 75 87 117 164];
+wofit = 1e9*[3.1568 3.1569 3.1574 3.1569 3.1577];
+freqfit = 1e-6*[2.0589 3.5 3.665 4.5741 6.8486];
+name{1} = '1DExp-seq-RotaryEchoCompleteEvol-SwXw-vary-mw_freq-2012-01-11-201924Uno50cycles.mat';
+name{2} ='1DExp-seq-RotaryEchoCompleteEvol-SwXw-vary-mw_freq-2012-01-17-202727Uno75cycles.mat';
+name{3} ='1DExp-seq-RotaryEchoCompleteEvol-SwXw-vary-mw_freq-2012-01-17-163452Uno87cyclesincomplete.mat'%alternative
+name{4} = '1DExp-seq-RotaryEchoCompleteEvol-SwXw-vary-mw_freq-2012-01-14-174935Uno117cycles.mat';
+name{5} = '1DExp-seq-RotaryEchoCompleteEvol-SwXw-vary-mw_freq-2012-01-15-034143Uno-164cycles.mat';
+
+endcycle = 5;
+
+for aux = 1:1:endcycle
+
+    clear Stadevi diffe signal rabi lowref oneref zeroref w array_pos arrp
+    load(name{aux});
+
+rabi = Scan.ExperimentData{1}{1};
+lowref = Scan.ExperimentData{1}{2};
+oneref = Scan.ExperimentData{1}{3};
+zeroref = Scan.ExperimentData{1}{4};
+
+w = Scan.vary_begin:((Scan.vary_end -Scan.vary_begin)/(Scan.vary_points-1)):Scan.vary_end;
+
+%average signal then normalize
+signal = (rabi - oneref)./(zeroref - oneref); %signal normalized
+
+Stadevi = sqrt(signal.*(1-signal));
+Stadevi = Stadevi(2:1:end); %Stadevi(1:1:end-1);
+
+diffe = diff(signal)./diff(w);
+
+%choosing the array position for the chosendelta
+[fulleta(aux), array_pos] = min((Stadevi./abs(diffe))*sqrt(IntT(aux)));
+maxvectorfulleta(aux) = w(array_pos);  
+
+figure(33)
+plot(w(2:1:end),1./(((Stadevi./abs(diffe))*sqrt(IntT(aux)))))
+hold on
+hline1 = line([wofit(aux) ;wofit(aux)],[0 ;max(1./(((Stadevi./abs(diffe))*sqrt(IntT(aux)))))])
+set(hline1,'Color','r');
+hline2 = line([wofit(aux)+0.5/freqfit(aux) ;wofit(aux)+0.5/freqfit(aux)],[0 ;max(1./(((Stadevi./abs(diffe))*sqrt(IntT(aux)))))])
+set(hline2,'Color','r');
+set(hline2,'LineStyle','--');
+hline3 = line([wofit(aux)-0.5/freqfit(aux) ;wofit(aux)-0.5/freqfit(aux)],[0 ;max(1./(((Stadevi./abs(diffe))*sqrt(IntT(aux)))))])
+set(hline3,'Color','r');
+set(hline3,'LineStyle','--');
+hold off
+
+end
+
+figure(67)
+subplot(3,1,1)
+plot(IntT(1:1:endcycle)/56e-9,fulleta,'ro',IntT(1:1:endcycle)/56e-9,[1/0.02219 1/0.04418 1/0.03843 1/0.],'bo')
+title('full sensitivity eta = stdev / derivative * sqrt(T) [1/sqrt(Hz)]')
+axis([44 170 0 50])
+subplot(3,1,2)
+plot(IntT(1:1:endcycle)/56e-9,fulleta/(28024.9540*10^6)*10^9,'ro')
+title('full sensitivity eta = stdev / derivative * sqrt(T) [nT/sqrt(Hz)]')
+subplot(3,1,3)
+plot(IntT(1:1:endcycle)/56e-9,maxvectorfulleta/1e9,'ro')

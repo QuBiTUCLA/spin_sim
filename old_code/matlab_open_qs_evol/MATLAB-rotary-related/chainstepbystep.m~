@@ -1,0 +1,251 @@
+clear all
+
+filearr = {};
+
+%%%%%%%%%%%%%%%%% NV ZORBA
+
+%Rotary 3pi/4, Series F
+% filearr{1} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-11-24-221641Zorba-3pi4-0to1';
+% filearr{2} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-11-25-010259Zorba-3pi4-1to2';
+% filearr{3} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-11-25-034456Zorba-3pi4-2to3';
+% filearr{4} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-11-25-071111Zorba-3pi4-3to4';
+% filearr{5} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-11-25-102211Zorba-3pi4-4to5';
+% filearr{6} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-11-25-133354Zorba-3pi4-5to6';
+
+%Rabi, series E
+% filearr{1} = '1DExp-seq-Rabi-vary-length_rabi_pulse-2011-11-23-223338Zorba-0to1';
+% filearr{2} = '1DExp-seq-Rabi-vary-length_rabi_pulse-2011-11-24-010847Zorba-1to2';
+% filearr{3} = '1DExp-seq-Rabi-vary-length_rabi_pulse-2011-11-24-035644Zorba-2to3';
+% filearr{4} = '1DExp-seq-Rabi-vary-length_rabi_pulse-2011-11-24-072327Zorba-3to4';
+% filearr{5} = '1DExp-seq-Rabi-vary-length_rabi_pulse-2011-11-24-105016Zorba-4to5';
+% filearr{6} = '1DExp-seq-Rabi-vary-length_rabi_pulse-2011-11-24-135942Zorba-5to6';
+
+%Rotary pi, series D
+% filearr{1} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-11-20-114120-Zorba-0to1';
+% filearr{2} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-11-20-141724Zorba-1to2';
+% filearr{3} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-11-20-171514Zorba-2to3';
+% filearr{4} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-11-20-200724Zorba-3to4';
+% filearr{5} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-11-20-230907Zorba-4to5';
+
+%Rotary 5pi, series G
+% filearr{1} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-11-28-153209Zorba-5pi-0to1';
+% filearr{2} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-11-28-195114Zorba-5pi-1to2';
+% filearr{3} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-11-29-005317Zorba-5pi-2to3';
+% filearr{4} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-11-29-063219Zorba-5pi-3to4';
+% filearr{5} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-11-29-121955Zorba-5pi-4to5';
+% filearr{6} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-11-29-183841Zorba-5pi-5to6';
+% filearr{7} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-11-30-014926Zorba-5pi-6to7';
+
+%%%%%%%%%%%%%%%%%%%%% NV UNO
+
+%Rabi 12MHz which splits
+% filearr{1} = '1DExp-seq-Rabi-vary-length_rabi_pulse-2011-12-07-144122Uno-0to1';
+% filearr{2} = '1DExp-seq-Rabi-vary-length_rabi_pulse-2011-12-07-164811Uno-1to2';
+% filearr{3} = '1DExp-seq-Rabi-vary-length_rabi_pulse-2011-12-07-190618Uno-2to3';
+% filearr{4} = '1DExp-seq-Rabi-vary-length_rabi_pulse-2011-12-07-213318Uno-3to4';
+% filearr{5} = '1DExp-seq-Rabi-vary-length_rabi_pulse-2011-12-08-000534Uno-4to5';
+% filearr{6} = '1DExp-seq-Rabi-vary-length_rabi_pulse-2011-12-08-024215Uno-5to6';
+% filearr{7} = '1DExp-seq-Rabi-vary-length_rabi_pulse-2011-12-08-053938Uno-6to7';
+% filearr{8} = '1DExp-seq-Rabi-vary-length_rabi_pulse-2011-12-08-103014Uno-7to8';
+% filearr{9} = '1DExp-seq-Rabi-vary-length_rabi_pulse-2011-12-08-165816Uno-8to9';
+%continue up to 13
+
+%Rabi 18MHz - Series J - CAN BE USED AS RESULT FOR RABI
+% filearr{1} = '1DExp-seq-Rabi-vary-length_rabi_pulse-2011-12-09-135223Uno-01';
+% filearr{2} = '1DExp-seq-Rabi-vary-length_rabi_pulse-2011-12-09-160248Uno-12';
+% filearr{3} = '1DExp-seq-Rabi-vary-length_rabi_pulse-2011-12-09-194732Uno-23';
+% filearr{4} = '1DExp-seq-Rabi-vary-length_rabi_pulse-2011-12-09-221339Uno-34';
+% filearr{5} = '1DExp-seq-Rabi-vary-length_rabi_pulse-2011-12-10-005318Uno-45';
+% filearr{6} = '1DExp-seq-Rabi-vary-length_rabi_pulse-2011-12-10-032858Uno-56';
+% filearr{7} = '1DExp-seq-Rabi-vary-length_rabi_pulse-2011-12-10-062151Uno-67';
+% filearr{8} = '1DExp-seq-Rabi-vary-length_rabi_pulse-2011-12-10-091735Uno-78';
+% filearr{9} = '1DExp-seq-Rabi-vary-length_rabi_pulse-2011-12-10-122008Uno-89';
+% filearr{10} ='1DExp-seq-Rabi-vary-length_rabi_pulse-2011-12-10-154212Uno-910';
+
+%Rotary pi for pi-pulse = 28ns - Series K - detuned 0.8MHz from resonance
+%filearr{1} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-11-124703Uno-01';
+%filearr{1} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-11-165223Uno-01bis';
+%filearr{2} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-11-145341Uno-12';
+
+%Rotary pi for pi-pulse = 28ns - series M
+%filearr{1} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-11-200245Uno-01';
+%filearr{2} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-11-220516Uno-12';
+%filearr{3} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-12-003236Uno-23';
+
+%Rotary pi for pi-pulse = 28ns - series N
+filearr{1} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-12-022908Uno-01';
+filearr{2} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-12-044530Uno-12';
+filearr{3} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-12-114143-Uno-23';
+filearr{4} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-12-141009Uno-34';
+filearr{5} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-12-164651Uno-45';
+filearr{6} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-12-193222Uno-45'; %this one is actually 5 to 6mus
+filearr{7} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-12-222445Uno-67';
+filearr{8} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-13-012200Uno-78';
+filearr{9} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-13-042739Uno-89';
+filearr{10} ='1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-13-074148Uno-910';
+filearr{11} ='1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-13-111919Uno-1011';
+filearr{12} ='1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-13-150405Uno-1112';
+filearr{13} ='1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-13-191256-1213';
+filearr{14} ='1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-13-231726Uno-1314';
+filearr{15} ='1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-14-034402Uno-1415';
+
+%%%Rotary 3*pi/4 for pi-pulse = 28ns, series O
+%filearr{1} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-14-053628Uno-01';
+%not used
+% 
+% filearr{1} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-14-163213Uno-01';
+% filearr{2} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-14-074511Uno-12';
+% filearr{3} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-14-100236Uno-23';
+% 
+% % filearr{4} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-14-122626Uno-34';
+% %not used
+% 
+% filearr{4} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-14-185620-34';
+% filearr{5} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-15-003113Uno-45'; 
+% filearr{6} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-15-031452Uno-56';
+% filearr{7} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-15-082503Uno-67';
+% filearr{8} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-15-122510Uno-78';
+% filearr{9} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-15-153847Uno-89';
+
+%%%Other Rotary 3pi/4, to confirm series above, series P
+% filearr{1} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-15-213227Uno-01';
+% filearr{2} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-15-234721Uno-12';
+% filearr{3} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-16-020549Uno-23';
+% filearr{4} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-16-043811Uno-34';
+% filearr{5} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-16-070809Uno-45';
+% filearr{6} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-16-094555Uno-67';
+
+%%%COMPLETE - Other Rotary 3pi/4, to confirm series above, series Q -
+%%%higher in detuning than series N,O,P
+% filearr{1} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-17-160140Uno-12';
+% filearr{2} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-17-180912Uno-12';
+% filearr{3} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-17-203342Uno-23';
+% filearr{4} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-17-225454Uno-34';
+% filearr{5} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-18-012510Uno-45';
+% filearr{6} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-18-040504Uno-56';
+% filearr{7} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-18-065503Uno-67';
+% filearr{8} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-18-095516Uno-78';
+% filearr{9} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-18-132742Uno-89';
+% filearr{10} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-18-164416Uno-910';
+% filearr{11} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-18-200745Uno-1011';
+% filearr{12} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-18-234032Uno-1112';
+% filearr{13} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-19-032731Uno-1213';
+% filearr{14} = '1DExp-seq-RotaryEchoCompleteEvolution-vary-length_rotary_pulse-2011-12-19-071626Uno-1314';
+
+N =15; % NEED TO INPUT THE LENGTH OF FILEARR
+
+signal = [];
+time = [];
+ra = [];
+low = [];
+one = [];
+zero = [];
+
+boe = [];
+
+for k =1:1:N
+
+    clear rabi lowref oneref zeroref rabinorm x
+    load(filearr{k});
+    
+    rabi = Scan.ExperimentData{1}{1};
+    lowref = Scan.ExperimentData{1}{2};
+    oneref = Scan.ExperimentData{1}{3};
+    zeroref = Scan.ExperimentData{1}{4};
+
+    x = Scan.vary_begin:((Scan.vary_end -Scan.vary_begin)/(Scan.vary_points-1)):Scan.vary_end;
+
+    %average then normalize
+    rabinorm = (rabi - oneref)./(zeroref - oneref); %rabi normalized
+    
+    signal = [signal rabinorm];
+    time = [time x];
+    ra = [ra rabi];
+    low = [low lowref];
+    one = [one oneref];
+    zero = [zero zeroref];
+    
+NFFT = 2^nextpow2(length(time));
+Fs = 1/abs(time(1)-time(2));                    % Sampling frequency
+fftx = Fs/2*linspace(0,1,NFFT/2+1);
+
+%simple FFT
+% ffty = [];
+% ffty = fft(signal-mean(signal),NFFT)/length(time);
+% ffty = ffty(1:NFFT/2+1);
+
+%periodogram
+boefftx2 = [];
+boefftx2 = min(fftx):1000:max(fftx);
+boe = [];
+for q = 1:length(boefftx2)
+boe(end+1) = abs(sum( (signal-mean(signal)) .* exp(1i * boefftx2(q)*2*pi * time)))^2/length(time);
+end
+
+SIG(k,:) = boe; 
+TIM(k,:) = boefftx2;
+%FFF{k} = abs(ffty);
+
+end
+
+figure(100); plot(time,signal,'k');
+
+%  save('DataSeries03pi4.txt','time','signal','-ascii');
+%  fid = fopen('DataSeries03pi4.txt', 'w');
+%  for k = 1:length(time)
+%      fprintf(fid, '%d %d\n', time(k), signal(k));
+%       end;
+%  fclose(fid);
+
+figure(2010); %plot(TIM(1,:),SIG(1,:),TIM(2,:),SIG(2,:),TIM(3,:),SIG(3,:),TIM(4,:),SIG(4,:),TIM(5,:),SIG(5,:),TIM(6,:),SIG(6,:))
+hold on
+%color code from http://www.colorcombos.com/color-schemes/286/ColorCombo286.html
+plot(TIM(1,:)/1e6,SIG(1,:),'Linewidth',1,'Color',[239/255,209/255,59/255])
+plot(TIM(2,:)/1e6,SIG(2,:),'LineWidth',2,'Color',[233/255,175/255,50/255])
+plot(TIM(3,:)/1e6,SIG(3,:),'LineWidth',3,'Color',[207/255,127/255,38/255])
+plot(TIM(4,:)/1e6,SIG(4,:),'LineWidth',4,'Color',[204/255,91/255,35/255])
+plot(TIM(5,:)/1e6,SIG(5,:),'LineWidth',5,'Color',[44/255,4/255,2/255])
+plot(TIM(6,:)/1e6,SIG(6,:),'LineWidth',5,'Color',[1,0,0])
+plot(TIM(7,:)/1e6,SIG(7,:),'LineWidth',5,'Color',[0,1,0])
+plot(TIM(8,:)/1e6,SIG(8,:),'LineWidth',5,'Color',[0,0,1])
+plot(TIM(9,:)/1e6,SIG(9,:),'LineWidth',5,'Color',[1,1,0])
+plot(TIM(10,:)/1e6,SIG(10,:),'LineWidth',5,'Color',[0,1,1])
+plot(TIM(11,:)/1e6,SIG(11,:),'LineWidth',1,'Color',[204/255,91/255,35/255])
+plot(TIM(12,:)/1e6,SIG(12,:),'LineWidth',1,'Color',[44/255,4/255,2/255])
+plot(TIM(13,:)/1e6,SIG(13,:),'LineWidth',1,'Color',[207/255,127/255,38/255])
+plot(TIM(14,:)/1e6,SIG(14,:),'LineWidth',1,'Color',[204/255,91/255,35/255])
+plot(TIM(15,:)/1e6,SIG(15,:),'LineWidth',1,'Color',[1,0,0])
+%title('Periodogram of Rabi sequence for increasing interrogation lengths','FontSize',40)
+ylabel('a.u.','FontSize',20)
+xlabel('Frequency (MHz)','FontSize',20)
+AX = legend('0 to 1\mus', '0 to 2\mus', '0 to 3\mus', '0 to 4\mus','0 to 5\mus','0 to 6\mus','0 to 7\mus','0 to 8\mus','0 to 9\mus','0 to 10\mus','0 to 11\mus','0 to 12\mus','0 to 13\mus','0 to 14/mus','0 to 15/mus');
+LEG = findobj(AX,'type','text');
+set(LEG,'FontSize',20)
+hold off
+
+out_freq = TIM(15,:);
+out_sig = SIG(15,:);
+
+save('seriesN.mat','out_freq','out_sig')
+
+%Plot FFT
+% figure(3); 
+% hold on
+% %color code from http://www.colorcombos.com/color-schemes/286/ColorCombo286.html
+% plot(FFF{1},'Linewidth',1,'Color',[239/255,209/255,59/255])
+% plot(FFF{2},'LineWidth',2,'Color',[233/255,175/255,50/255])
+% plot(FFF{3},'LineWidth',3,'Color',[207/255,127/255,38/255])
+% plot(FFF{4},'LineWidth',4,'Color',[204/255,91/255,35/255])
+% plot(FFF{5},'LineWidth',5,'Color',[44/255,4/255,2/255])
+% plot(FFF{6},'LineWidth',5,'Color',[1,0,0])
+% plot(FFF{7},'LineWidth',5,'Color',[0,1,0])
+% plot(FFF{8},'LineWidth',5,'Color',[0,0,1])
+% plot(FFF{9},'LineWidth',5,'Color',[1,1,0])
+% plot(FFF{10},'LineWidth',5,'Color',[0,1,1])
+% title('FFT of Rabi sequence for increasing interrogation lengths','FontSize',40)
+% ylabel('a.u.','FontSize',20)
+% xlabel('Frequency (MHz)','FontSize',20)
+% AX = legend('0 to 1\mus', '0 to 2\mus', '0 to 3\mus', '0 to 4\mus','0 to 5\mus','0 to 6\mus','0 to 7\mus','0 to 8\mus','0 to 9\mus','0 to 10\mus');
+% LEG = findobj(AX,'type','text');
+% set(LEG,'FontSize',20)
+% hold off

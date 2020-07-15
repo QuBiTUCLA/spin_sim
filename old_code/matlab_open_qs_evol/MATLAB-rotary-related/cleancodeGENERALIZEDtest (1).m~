@@ -1,0 +1,457 @@
+function cleancodeGENERALIZEDtest() 
+%built on cleancodeGENERALIZED(), adds the feature that one can have N
+%points at each half-cycle of matrix-mult evolution
+
+%Static noise
+
+%Stochastic noise 
+%characterized by 0 mean and autocorrelation function 
+% = stdev^2*exp(-timeunit/tauC) = variance*exp(-timeunit/tauC)
+
+%in the Detuning frequency Det Delta + dDelta(t), plus in the Rabi
+
+%plotting in time
+  
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+global Rabi g1 g2 anglerot DabEq;
+global Delta
+
+do_Rabi = 1;
+do_Rot = 1;
+
+Rabi = 2*pi*5e6; % bare Rabi in circular freq
+g1 = 0; %Right now T1 infinite
+g2 = (3/100*Rabi)*sqrt(2)*sin(anglerot/2)/anglerot;%*(timeunit_noise_is_cst_Delta/N);        %1/(100e-6);
+
+%For rotary
+angle = 1/2; %in pi units; change here
+anglerot =angle*pi;
+Delta=2*pi*(1)*0.5e6;   %2.1e6; % By definition, w0 - w, but here parametrized by % of Rabi;
+
+DabEq =0; %all pop in ground state
+rhoggEq = (-DabEq + 1)/2;
+
+u_init = 0;
+v_init = 0;
+w_init = -1;
+
+nbcycle =200; %ceil(Rabi/anglerot/g2); 
+
+%N is the nb of pts per half cycles, ie, 2N is the nb of pts per cycle
+N =4;
+timeunit = anglerot/Rabi/N;
+
+% Do noise in Rabi frequency?
+do_stonoiseR = 0;
+do_stanoiseR = 0;
+
+% Do noise in Delta (bath noise)?
+do_stonoiseD = 0;
+do_stanoiseD = 1;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% noise params
+
+%how many times to average over noise, both in Rabi and in Delta
+avg_noise_nb_of_times = 200;
+
+% one half cycle has N points; number below is from 1 to ...
+timeunit_noise_is_cst_Delta =1; %time duration of piecewise-constant noise in timeunits
+timeunit_noise_is_cst_Rabi = 2;  %time duration of piecewise-constant noise in temeunits
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% NOISE IN DELTA
+% stoch noise in Delta params: autocorrelation function = variance*exp(-timeunit/tauC)
+varianceD = (10/100*Rabi)^2;
+tauCD = pi/2/Rabi;    %200*timeunit;
+stonoiseD=sample_stoch_noise(varianceD,tauCD,timeunit,2*nbcycle*N,avg_noise_nb_of_times);
+%way to call it: stonoise(nb_of_noise_avg_param,cycle_time_param)
+
+%static noise in Delta (bath noise)
+Distr = 'Normal';
+AD = 0; %A param for normal is mean
+BD = (3/100*Rabi); %B param for normal is std dev
+stanoiseD = random(Distr,AD,BD,[avg_noise_nb_of_times,2*nbcycle*N]);
+% correction for the length of the piecewise constant noise
+
+%code below extends stanoiseD but it's ok bc extended array is not used
+for hel = 0:1:ceil(2*N*nbcycle/timeunit_noise_is_cst_Delta)-1
+    for hel2 = 1:1:timeunit_noise_is_cst_Delta-1
+stanoiseD(:,1 + hel*timeunit_noise_is_cst_Delta + hel2) = stanoiseD(:,1 + hel*timeunit_noise_is_cst_Delta);
+    end
+end
+stanoiseD = stanoiseD(:,1:1:2*nbcycle*N); %cutting extended stanoiseR
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%NOISE IN RABI
+% stoch noise in Rabi params: autocorrelation function = variance*exp(-timeunit/tauC)
+varianceR = (5/100*Rabi)^2;
+tauCR = 1*timeunit;
+stonoiseR=sample_stoch_noise(varianceR,tauCR,timeunit,2*nbcycle*N,avg_noise_nb_of_times);
+%way to call it: stonoise(nb_of_noise_avg_param,cycle_time_param)
+
+%static noise in Rabi (excitation noise)
+Distr = 'Normal';
+AR = 0; %A param for normal is mean
+BR = (5/100*Rabi); %B param for normal is std dev
+stanoiseR = random(Distr,AR,BR,[avg_noise_nb_of_times,2*nbcycle*N]);
+%code below extends stanoiseR but it's ok bc extended array is not used
+for hel = 0:1:ceil(2*N*nbcycle/timeunit_noise_is_cst_Rabi)-1
+    for hel2 = 1:1:timeunit_noise_is_cst_Rabi-1
+stanoiseR(:,1 + hel*timeunit_noise_is_cst_Rabi + hel2) = stanoiseR(:,1 + hel*timeunit_noise_is_cst_Rabi);
+    end
+end
+stanoiseR = stanoiseR(:,1:1:2*nbcycle*N); %cutting extended stanoiseR
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%SUM
+noiseD = zeros(size(stonoiseD));
+noiseR = zeros(size(stonoiseD));
+
+if do_stonoiseD
+    noiseD = stonoiseD;    
+end
+
+if do_stanoiseD
+    noiseD = noiseD + stanoiseD;    
+end
+
+
+if do_stonoiseR
+    noiseR = stonoiseR;    
+end
+
+if do_stanoiseR
+    noiseR = noiseR + stanoiseR;    
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%To calculate fidelity decay
+Auxpop = {};
+AuxU = {};
+AuxV = {}; 
+AuxpopRot = {}; 
+AuxURot = {};
+AuxVRot = {}; 
+
+% vectors to average over realizations of noise
+Zmmavg = zeros(1,2*nbcycle*N+1);
+Zmmrotavg = zeros(1,2*nbcycle*N+1);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+if (do_stonoiseR)||(do_stanoiseR)||(do_stonoiseD)||(do_stanoiseD)
+
+
+for aux = 1:1:avg_noise_nb_of_times
+    
+    aux/avg_noise_nb_of_times
+
+% Matrix multiplication
+
+Zmm = [];
+umm = [];
+vmm = [];
+
+Zmmrot = [];
+ummrot = [];
+vmmrot = [];
+
+
+%with dissipation, column vectors
+rho = [(1-w_init)/2,(u_init + 1i*v_init)/2,(u_init - 1i*v_init)/2,1-(1-w_init)/2]';
+Zmm(1) = rho(1);
+umm(1) = 2*real(rho(2));
+vmm(1) = -2*imag(rho(2));
+%% Usual Rabi
+if do_Rabi
+    k = 0;
+for nb_aux = 1/N:1/N:(2*nbcycle)
+    
+    k = k + 1;
+    
+    EpsD = noiseD(aux,k);
+    EpsR = noiseR(aux,k);
+    
+    % dissipation
+    M = [0,-1i*(Rabi+EpsR)/2,1i*(Rabi+EpsR)/2,g1;-1i*(Rabi+EpsR)/2,1i*(Delta + EpsD) - g2,0,1i*(Rabi+EpsR)/2;1i*(Rabi+EpsR)/2, 0,-1i*(Delta+EpsD)-g2,-1i*(Rabi+EpsR)/2;0,1i*(Rabi+EpsR)/2,-1i*(Rabi+EpsR)/2,-g1];
+    
+    rho = expm(timeunit*M)*rho;
+  
+    Zmm(k+1) = rho(1);
+    umm(k+1) = 2*real(rho(2));
+    vmm(k+1) = -2*imag(rho(2));
+    
+end
+end
+
+h = 1;
+rho = [(1-w_init)/2,(u_init + 1i*v_init)/2,(u_init - 1i*v_init)/2,1-(1-w_init)/2]';
+Zmmrot(1) = rho(1);
+ummrot(1) = 2*real(rho(2));
+vmmrot(1) = -2*imag(rho(2));
+
+
+if do_Rot
+%% Rotary
+kk = 0;
+for nb_aux = 1/N:1/N:(2*nbcycle)
+    
+    kk = kk + 1;
+    
+    EpsD = noiseD(aux,kk);
+    EpsR = noiseR(aux,kk);
+        
+    % dissipation
+    M = [0,-1i*(Rabi+EpsR)*h/2,1i*(Rabi+EpsR)*h/2,g1;-1i*(Rabi+EpsR)*h/2,1i*(Delta+EpsD) - g2,0,1i*(Rabi+EpsR)*h/2;1i*(Rabi+EpsR)*h/2, 0,-1i*(Delta+EpsD)-g2,-1i*(Rabi+EpsR)*h/2;0,1i*(Rabi+EpsR)*h/2,-1i*(Rabi+EpsR)*h/2,-g1];
+    
+    rho = expm(timeunit*M)*rho;
+    Zmmrot(kk+1) = rho(1);
+    ummrot(kk+1) = 2*real(rho(2));
+    vmmrot(kk+1) = -2*imag(rho(2));
+   
+    if rem(kk,N) == 0
+    h = -h;
+    end
+    
+end
+end
+
+Zmmrotavg = Zmmrotavg + Zmmrot;
+Zmmavg = Zmmavg + Zmm;
+
+Auxpop{aux} = Zmm;
+AuxU{aux} = umm;
+AuxV{aux} = vmm;
+
+AuxpopRot{aux} = Zmmrot;
+AuxURot{aux} = ummrot;
+AuxVRot{aux} = vmmrot;
+
+end
+end
+
+%averaging
+Zmmavg = Zmmavg/avg_noise_nb_of_times;
+Zmmrotavg = Zmmrotavg/avg_noise_nb_of_times;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% No stochastic noise
+
+% Matrix multiplication
+
+Zmm = [];
+umm = [];
+vmm = [];
+
+Zmmrot = [];
+ummrot = [];
+vmmrot = [];
+
+
+%with dissipation, column vectors
+rho = [(1-w_init)/2,(u_init + 1i*v_init)/2,(u_init - 1i*v_init)/2,1-(1-w_init)/2]';
+Zmm(1) = rho(1);
+umm(1) = 2*real(rho(2));
+vmm(1) = -2*imag(rho(2));
+%% Usual Rabi
+k = 0;
+for nb_aux = 1/N:1/N:(2*nbcycle)
+    
+    k = k + 1;
+    
+    % dissipation
+    M = [0,-1i*Rabi/2,1i*Rabi/2,g1;-1i*Rabi/2,1i*(Delta) - g2,0,1i*Rabi/2;1i*Rabi/2, 0,-1i*(Delta)-g2,-1i*Rabi/2;0,1i*Rabi/2,-1i*Rabi/2,-g1];
+    
+    rho = expm(timeunit*M)*rho;
+  
+    Zmm(k+1) = rho(1);
+    umm(k+1) = 2*real(rho(2));
+    vmm(k+1) = -2*imag(rho(2));
+    
+end
+
+h = 1;
+rho = [(1-w_init)/2,(u_init + 1i*v_init)/2,(u_init - 1i*v_init)/2,1-(1-w_init)/2]';
+Zmmrot(1) = rho(1);
+ummrot(1) = 2*real(rho(2));
+vmmrot(1) = -2*imag(rho(2));
+
+%% Rotary
+kk = 0;
+for nb_aux = 1/N:1/N:2*nbcycle
+    
+    kk = kk + 1;
+        
+    % dissipation
+    M = [0,-1i*Rabi*h/2,1i*Rabi*h/2,g1;-1i*Rabi*h/2,1i*(Delta) - g2,0,1i*Rabi*h/2;1i*Rabi*h/2, 0,-1i*(Delta)-g2,-1i*Rabi*h/2;0,1i*Rabi*h/2,-1i*Rabi*h/2,-g1];
+    
+    rho = expm(timeunit*M)*rho;
+    Zmmrot(kk+1) = rho(1);
+    ummrot(kk+1) = 2*real(rho(2));
+    vmmrot(kk+1) = -2*imag(rho(2));
+   
+    if rem(kk,N) == 0
+    h = -h;
+    end
+    
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if do_stonoiseR || do_stanoiseR || do_stonoiseD || do_stanoiseD 
+
+%Fidelity decay
+%density matrices
+    M_Ideal = [];
+    MRot_Ideal = [];
+    
+    %fidelities
+    Fid = [];
+    FidRot = [];
+    Fidelity = [];
+    FidelityRot = [];
+    
+    for aux = 1:1:length(Zmm)
+        if do_Rabi
+        M_Ideal(:,:,aux) = [Zmm(aux),(umm(aux)-1i*vmm(aux))/2;(umm(aux)+1i*vmm(aux))/2,1-Zmm(aux)];
+        end
+        if do_Rot
+        MRot_Ideal(:,:,aux) = [Zmmrot(aux),(ummrot(aux)-1i*vmmrot(aux))/2;(ummrot(aux)+1i*vmmrot(aux))/2,1-Zmmrot(aux)];
+        end
+    end
+
+    for hlp = 1:1:avg_noise_nb_of_times
+       
+        for aux=1:1:length(Auxpop{hlp})
+            if do_Rabi
+            M = [Auxpop{hlp}(aux),(AuxU{hlp}(aux)-1i*AuxV{hlp}(aux))/2;(AuxU{hlp}(aux)+1i*AuxV{hlp}(aux))/2,1-Auxpop{hlp}(aux)];
+            end
+            if do_Rot
+            MRot =  [AuxpopRot{hlp}(aux),(AuxURot{hlp}(aux)-1i*AuxVRot{hlp}(aux))/2;(AuxURot{hlp}(aux)+1i*AuxVRot{hlp}(aux))/2,1-AuxpopRot{hlp}(aux)];
+            end
+            
+            %calculate fidelity comparing (ideal) with (non-ideal)
+            %real needed here to correct for calculation mistakes; errors
+            %give imag part o(1e-16)
+            if do_Rabi
+            Fid(hlp,aux) = real(trace(M_Ideal(:,:,aux)*M));
+            end
+            if do_Rot
+            FidRot(hlp,aux) = real(trace(MRot_Ideal(:,:,aux)*MRot));
+            end
+        end
+        
+    end
+    
+     %avg over noise
+    for aux = 1:1:length(Zmm)
+        
+        if do_Rabi
+        Fidelity(:,aux) = mean(Fid(:,aux));
+        end
+        if do_Rot
+        FidelityRot(:,aux) = mean(FidRot(:,aux));
+        end
+        
+    end
+    
+    figure(21); 
+    hold on
+     if do_Rabi
+     plot([0:1/2:(length(Zmmrot)-1)/2]/N*2*anglerot/Rabi,Fidelity,'k--');
+     end
+     hold on
+     if do_Rot
+     plot([0:1/2:(length(Zmmrot)-1)/2]/N*2*anglerot/Rabi,FidelityRot,'b--');
+     end
+     hold off
+     title(sprintf('Fidelity in time, red is rabi, blue is rotary'));   
+
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Fitting for rotary
+
+%PRB modified results for rotary
+tunit =  (2*anglerot*nbcycle/Rabi)/(nbcycle*N*2); %1e-9; %make same number per cycle as in the simulation
+tfinal = 2*anglerot*nbcycle/Rabi;
+t = 0:tunit:tfinal;
+c = (3*g1 + 2*g2)/4;
+C = sqrt(1 + c^2/Rabi^2);
+theta = atan(Rabi/c);
+%prb = 0.5*(sin(anglerot/2)^2*C*sin(t*Rabi*pi/anglerot + theta).*cos(2*Delta*t/anglerot*sin(anglerot/2)).*exp(-(c*t)*(3/2)*pi/anglerot*sin(anglerot/2))) + 0.5*(1 + cos(anglerot/2)^2*exp(-(c*t)*anglerot/pi*sin(anglerot/2)));
+prb = 0.5*(sin(anglerot/2)^2*C*sin(t*Rabi*pi/anglerot + theta).*cos(2*Delta*t/anglerot*sin(anglerot/2)).*exp(-t*g2/2*(3/2))) + 0.5*(cos(anglerot/2)^2*exp(-t*g2/2) +exp(-t*g2/2));
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Plotting
+
+figure(11); 
+
+hold on
+if do_Rot
+% %to save rotary data
+% tempon3 = [0:1/2:(length(Zmmrot)-1)/2]/N*2*anglerot/Rabi;
+% signaln3 = real(Zmmrotavg);
+% save('noisy3.mat','tempon3','signaln3')
+
+% mm result rotary without noise
+%plot([0:1/2:(length(Zmmrot)-1)/2]/N*2*anglerot/Rabi,real(Zmmrot),'b') %plot in time
+
+%subplot(2,1,1)
+plot(0:1/2/N:(length(Zmmrot)-1)/2/N,real(Zmmrot),'-.bs') %plot in cycles
+hold on
+plot(0:1/2/N:(length(Zmmrot)-1)/2/N,prb,'g') %plot in cycles
+hold on
+%matrix multiplication result rotary
+if  do_stonoiseR || do_stanoiseR || do_stonoiseD || do_stanoiseD
+%plot([0:1/2:(length(Zmmrot)-1)/2]/N*2*anglerot/Rabi,real(Zmmrotavg),'b')
+%%plot in time
+plot(0:1/2/N:(length(Zmmrotavg)-1)/2/N,real(Zmmrotavg),'r') %plot in cycles
+end
+
+end
+
+klkl
+
+
+if do_Rabi
+subplot(2,1,2)
+% mm result rabi without noise
+%plot([0:1/2:(length(Zmm)-1)/2]/N*2*anglerot/Rabi,real(Zmm),'r--') %plot in time
+plot(0:1/2/N:(length(Zmm)-1)/2/N,real(Zmm),'r--') %plot in cycles
+hold on
+%matrix multiplication result rabi
+if  do_stonoiseR || do_stanoiseR || do_stonoiseD || do_stanoiseR 
+%plot([0:1/2:(length(Zmmavg)-1)/2]/N*2*anglerot/Rabi,real(Zmmavg),'r') %plot in time
+plot([0:1/2/N:(length(Zmmavg)-1)/2/N],real(Zmmavg),'r') %plot in cycles
+end
+
+end
+hold off
+
+%title('Rotary: pop in 0, blue is rot matrix mult, black is rot PRB approx, red is rabi matrix mult')
+title('blue is rot matrix mult, red is rabi matrix mult')
+xlabel(sprintf('(2*anglerot)/Rabi cycles, anglerot = %0.3f * pi', angle))
+
+if  do_stonoiseR || do_stanoiseR || do_stonoiseD || do_stanoiseD
+
+figure(210); 
+    if do_Rabi
+    plot([0:1/2:(length(Zmmrot)-1)/2]/N*2*anglerot/Rabi,Fidelity,'r');
+    hold on
+    plot([0:1/2:(length(Zmmrot)-1)/2]/N*2*anglerot/Rabi,real(Zmm).*real(Zmmavg),'g')
+    end
+     hold on
+     if do_Rot
+     plot([0:1/2:(length(Zmmrot)-1)/2]/N*2*anglerot/Rabi,FidelityRot,'b');
+     hold on
+     plot([0:1/2:(length(Zmmrot)-1)/2]/N*2*anglerot/Rabi,real(Zmmrot).*real(Zmmrotavg),'k')
+     end
+     
+     title(sprintf('Fidelity in time, red is rabi, blue is rotary'));   
+end

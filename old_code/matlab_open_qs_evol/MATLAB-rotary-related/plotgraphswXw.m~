@@ -1,0 +1,63 @@
+close all
+figure(56)
+
+load('50cyclespi.mat')
+plot(w50/1e9,sig50,'o','MarkerSize',6,'LineWidth',1,'Color','b')
+plot(w50/1e9,fit50,'MarkerSize',6,'LineWidth',1,'Color','b')
+hold on
+plot(w50(res50)/1e9,sig50(res50),'bd','MarkerSize',18)
+hold on
+
+load('87cyclespi.mat')
+plot(w87(1:1:110)/1e9,sig87(1:1:110),'o',w87(1:1:110)/1e9,fit87(1:1:110),'LineWidth',2,'Color','b','MarkerSize',5)
+hold on
+plot(w87(res87),sig87(res87),'bd','MarkerSize',18)
+hold on
+
+load('164cyclespi.mat')
+plot(w164/1e9,sig164,'o',w164/1e9,fit164,'LineWidth',2.5,'Color','b','MarkerSize',4)
+hold on
+plot(w164(res164)/1e9,sig164(res164),'bd','MarkerSize',18)
+hold on
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% load('35cycles3pi4.mat')
+% plot(ww35,ss35,'m*',ww35,ff35,'m','MarkerSize',6)
+% hold on
+% plot(ww35(rr35),ss35(rr35),'bo','MarkerSize',16)
+% hold on
+% 
+% load('49cycles3pi4.mat')
+% plot(ww49,ss49,'y*',ww49,ff49,'y','MarkerSize',6)
+% hold on
+% plot(ww49(rr49),ss49(rr49),'bo','MarkerSize',16)
+% hold on
+
+load('75cycles3pi4.mat')
+plot(ww75(1:1:100)/1e9,ss75(1:1:100),'*',ww75(1:1:100)/1e9,ff75(1:1:100),'MarkerSize',6,'LineWidth',1,'Color','r')
+hold on
+plot(ww75(rr75)/1e9,ss75(rr75),'rd','MarkerSize',18)
+hold on
+
+% load('90cycles3pi4.mat')
+% plot(ww90,ss90,'r*',ww90,ff90,'r','MarkerSize',6)
+% hold on
+% plot(ww90(rr90),ss90(rr90),'bo','MarkerSize',16)
+% hold on
+
+load('100cycles3pi4.mat')
+plot(ww100(80:1:end)/1e9,ss100(80:1:end),'*',ww100(80:1:end)/1e9,ff100(80:1:end),'MarkerSize',5,'LineWidth',2,'Color','r','MarkerSize',4)
+hold on
+plot(ww100(rr100)/1e9,ss100(rr100),'rd','MarkerSize',18)
+hold on
+
+axis([3.156 3.158 0.4 0.8])
+AX = legend('\pi-RE 2.8\mus','\pi-RE 4.8\mus','\pi-RE 9.2\mus','3\pi/4-RE 3.1\mus','3\pi/4-RE 4.2\mus')
+LEG = findobj(AX,'type','text');
+set(LEG,'FontSize',20)
+ylabel('Signal','FontSize',20)
+xlabel('\mu wave frequency (GHz)','FontSize',20)
+
+
+

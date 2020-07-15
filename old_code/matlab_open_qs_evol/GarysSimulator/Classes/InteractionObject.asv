@@ -1,0 +1,6 @@
+classdef InteractionObject < handle //ha
+    
+    properties
+        Name
+    end
+end

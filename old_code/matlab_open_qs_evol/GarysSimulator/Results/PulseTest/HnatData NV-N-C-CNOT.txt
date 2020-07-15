@@ -1,0 +1,91 @@
+C=2.905
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%% Define all parameters %%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%Reset the params structure
+params = [];
+
+%Hamiltonian
+params.NVSpinNumber = 3/4;
+params.numberOfCarbon = 1;
+params.carbonDistRadius = 3;
+params.Trotter = 2^5;
+
+%Load Data
+% LauncherHamiltonian(params.NVSpinNumber,params.numberOfCarbon,params.carbonDistRadius);
+load('HnatData.mat') %Hamiltonian from simulator, variable HnatData
+
+%MethodsGradient
+params.optMethod = 'Conjugate'; %Optimization methods: 'Gradient', 'Conjugate', 'BFGS'
+params.optType = 'Unitary'; %Optimization types :'Unitary', 'Transfer'
+params.gradientOrder = 2; %Improvement is not assured for increased order
+
+%pLength-Number of timesteps min:step:max
+%timeStep-Length of each time step
+params.maxpLength = 3500;
+params.pLengthStep = 500;
+params.minpLength = 3500; %Must be larger than 2
+params.timeStep = 1e-8; %of the order of oscillations (1e-9 minimum experimental pulse generator 
+%+ RWA resonance freq max)
+
+%Maximum power
+params.maxPower = 1e7; %5e6-1e7 maximum experimental power in Hz, must be positive
+params.powerGradPenalty = 0; %about 1
+
+%Some parameters for the random guess 
+%initPulseScale-Max intensity of the random guess for RF pulse
+%randPower-How random is the initial pulse [0,1]
+params.randomPulseFlag = 1; %Disable random, if 0 sometimes block algorithm, if 1 works will often be best
+params.initPulseScale = params.maxPower/5; %Only for random
+params.randPower = 1;
+
+%Annealing parameters for global convergence
+params.annealingSteps = 15; %Number of randomization
+
+%initStepSize-Initial stepsize
+%minstepInterval-Minimum section interval (if we're not moving anywhere we should stop searching)
+params.initStepSize = 1; % 1 is good
+params.minStepInterval = 1e-2; %In percent of initStepSize
+
+%Desired fidelity for the unitary (this is the trace squared fidelity
+params.fidelity = 0.999;
+params.improvechk = 0; %Tolerance for improving DIRECTION VARIATION in percent
+params.lengthImprov = -1; %This condition stops the length loop if the fidelity
+%starts decreasing more then this value (negative, -1 to disable)
+
+%Control Matrix
+NV = Spin(params.NVSpinNumber);
+Nitrogen = Spin(1);
+Carbon = Spin(1/2);
+%Maxpower should be divided by number of controlMatS
+params.ControlMats{1} = HnatData.expandOperator('NV',NV.Sx);
+params.maxPower = params.maxPower/length(params.ControlMats);
+
+% %Input state
+% rhoin = HnatData.expandOperator('NV',diag([0 1]));
+% params.rhoin = rhoin/norm(rhoin,'fro');
+% clear rhoin
+
+% %Output states (many goal possible)
+% rhogoal = HnatData.expandOperator('NV',diag([1 0]));
+% params.opGoal = rhogoal/norm(rhogoal,'fro');
+% clear rhogoal
+% 
+%Input state
+rhoin = kron(kron(diag([1 0]),eye(3)),diag([1 0])); %NV/Nitrogen/Carbon
+params.rhoin = rhoin/norm(rhoin,'fro');
+clear rhoin
+
+% % Operator goal
+gate = Gates();
+% params.opGoal = gate.Rotation2(HnatData,'NV',0,pi,0,0);
+params.opGoal = gate.CNOT(HnatData,'NV','Carbon1');
+
+%Figure to be shown (state evolution)
+params.watchSpin{1} = 'NV';
+% params.watchSpin{2} = 'Nitrogen';
+params.watchSpin{2} = 'Carbon1';
+
+
+

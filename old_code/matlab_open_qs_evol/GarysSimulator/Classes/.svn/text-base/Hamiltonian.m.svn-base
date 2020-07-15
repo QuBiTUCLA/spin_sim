@@ -1,0 +1,211 @@
+classdef Hamiltonian < handle
+    
+    
+    properties
+        Matrix 
+        Spins = Spin.empty
+        Interactions = Interaction.empty
+        Field = Field.empty
+        InteractionFrameOperator
+        InteractionFrameEnergy
+        InteractionHamiltonian
+        SecularHamiltonian
+    end
+    
+    methods
+        
+        %Constructor
+        function H = Hamiltonian()
+        end
+        
+        %Methods for adding spins or fields
+        function addSpin(H,S)
+            H.Spins(end+1) = S;
+        end
+            
+        function addSpins(H,varargin)
+            for k=1:length(varargin)
+                H.Spins(end+1) = varargin{k};
+            end
+        end
+        
+        function addField(H,F)
+            H.Field(end+1) = F;
+        end
+        
+        %Method for returning a spin or field
+        function obj = findObject(H,ObjName)
+            obj = [];
+            for k=1:length(H.Spins),
+                if strcmp(H.Spins(k).Name,ObjName),
+                    obj = H.Spins(k);
+                    break
+                end
+            end
+            for k=1:length(H.Field),
+                if strcmp(H.Field(k).Name,ObjName),
+                    obj = H.Field(k);
+                    break
+                end
+            end
+            if isempty(obj),
+                error('No Object found with name %s',ObjName);
+            end
+        end
+        
+        %Methods for creating and adding iteractions
+        function addInteraction(H,I)
+            H.Interactions(end+1) = I;
+        end
+        
+        function createInteraction(H,Object1,Object2,InteractionType,InteractionTensor)
+            obj1 = H.findObject(Object1);
+            %Sort out whether this is one or two object interaction
+            if ~strcmp(class(Object2),'double'),
+                obj2 = H.findObject(Object2);
+                myInt = Interaction(obj1,obj2,InteractionType,InteractionTensor);
+            else
+                myInt = Interaction(obj1);
+                myInt.setType(InteractionType);
+                myInt.setTensor(InteractionTensor);
+            end
+            %Create the interactino matrix
+            myInt.createMatrixForm();
+            %Add it to the Hamiltonian object
+            H.addInteraction(myInt);             
+        end
+        
+        function d = HilbertDim(H)
+            d = 1;
+            for k=1:length(H.Spins),
+                d = d*(2*H.Spins(k).SpinAngularMomentum + 1);
+            end
+        end
+        
+        function d = spinDimensions(H)
+            d = zeros(1,length(H.Spins));
+            for k=1:length(H.Spins),
+                d(k) = H.Spins(k).dimH;
+            end
+        end
+        
+        function pos = findSpinPosition(H,Name)
+            for k=1:length(H.Spins),
+                if strcmp(H.Spins(k).Name,Name),
+                    pos = k;
+                    break
+                else
+                    pos = 0;
+                end
+            end
+        end
+        
+        function createFullHamiltonian(H)
+            
+            H.Matrix = zeros(H.HilbertDim());
+          
+            % now we loop over all the interactions and generate matricies
+            % Then we order them correctly according to the Spin Ordering
+            for intct=1:length(H.Interactions),
+                
+                % check what kind of interaction it is
+                % Deal with Single Spin Interactions by kron-ing up a local
+                % matrix with Id on all other spins
+                switch H.Interactions(intct).Type
+                    %Single spin interactions
+                    case {'Zeeman','ZFS'}
+                        iName = H.Interactions(intct).Object1.Name;
+                        p = 1;
+                        for k=1:length(H.Spins),
+                            if strcmp(H.Spins(k).Name,iName),
+                                p = kron(p,H.Interactions(intct).Matrix);
+                            else
+                                p = kron(p,H.Spins(k).Si);
+                            end
+                        end
+                        H.Matrix = H.Matrix + p;
+                    %Two spin interactions    
+                    case {'Hyperfine','Dipolar'}
+                        Name1 = H.Interactions(intct).Object1.Name;
+                        Name2 = H.Interactions(intct).Object2.Name;
+                        p1 = H.findSpinPosition(Name1);
+                        p2 = H.findSpinPosition(Name2);
+                        pXOR = setxor([p1,p2],1:length(H.Spins));
+                        H.Interactions(intct).createMatrixForm;
+                        H.Matrix = H.Matrix + expandHilbertSpace(H.Interactions(intct).Matrix,[p1,p2],pXOR,H.spinDimensions());
+                end
+            end
+        end
+  
+        %Method to get secular Hamiltonian 
+        function M = createZeroHamiltonian(H,Name)
+            
+            % get the spin position
+            spinPos = findSpinPosition(H,Name);
+            
+            % get the Hilbert space dimension for spins before and after
+            % the selected spin
+            dBefore = 1;
+            dAfter = 1;
+            for k=1:spinPos-1,
+            dBefore = dBefore*(2*H.Spins(k).SpinAngularMomentum+1);
+            end
+            for k=spinPos+1:length(H.Spins),
+            dAfter = dAfter*(2*H.Spins(k).SpinAngularMomentum+1);
+            end
+            
+            % make projectors from the identity operator and project out
+            % the matrix
+            M = zeros(dBefore*dAfter*(2*H.Spins(spinPos).SpinAngularMomentum+1));
+            [e,v] = eig(H.Spins(spinPos).Si);
+            for k=1:length(v),
+                P = v(:,k)*v(:,k)';
+                Proj = kron(kron(ones(dBefore),P),ones(dAfter));
+                M = M+ Proj.*H.Matrix;
+            end
+            
+        end
+        
+        function M = expandOperator(H,Name,Op)
+            
+            % get the spin position
+            spinPos = findSpinPosition(H,Name);
+            
+            %Use expand hilbert space to put it together
+            M = expandHilbertSpace(Op,spinPos,setxor(spinPos,1:length(H.Spins)),H.spinDimensions());
+            
+        end
+        
+        function toggleInteractionFrame(H,Hstart)
+
+            H.InteractionHamiltonian = Hstart - H.InteractionFrameEnergy*H.InteractionFrameOperator;
+        end
+        
+        function HSecular = getSecularInteractionHamiltonian(H)
+
+            b = eye(size(H.Matrix));
+            HSecular = zeros(size(H.Matrix));
+            % do a 4d loop over matrix
+            for k1=1:length(H.Matrix),
+                for k2 = 1:length(H.Matrix),
+                    for k3=1:length(H.Matrix),
+                        for k4=1:length(H.Matrix),
+                            if (H.InteractionHamiltonian(k3,k4) == 0) || (H.InteractionFrameOperator(k1,k2) == 0),
+                                HSecular = H.InteractionHamiltonian(k3,k4)*b(:,k3)*b(:,k4)' + HSecular;
+            
+                            elseif (k1 == k2) && (k3 == k4),
+                                HSecular = H.InteractionHamiltonian(k3,k4)*b(:,k3)*b(:,k4)' + HSecular;
+                            elseif (k1 == k3) && (k2 == k4),
+                                HSecular = H.InteractionHamiltonian(k3,k4)*b(:,k3)*b(:,k4)' + HSecular;
+                            end
+                        end
+                    end
+                end
+            end
+            % because we loop in 4d, we need to normalize by the total
+            % dimension
+            dimL = numel(H.Matrix);
+            HSecular = HSecular./dimL;
+        end
+    end
+end

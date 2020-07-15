@@ -1,0 +1,310 @@
+%3pi/4
+clear all
+
+IntT = 42e-9*[35 49 75 90 100];
+
+name{1} = '1DExp-seq-RotaryEchoCompleteEvol-SwXw-vary-mw_freq-2012-01-23-212840Uno3pi435cycles.mat';
+name{2} = '1DExp-seq-RotaryEchoCompleteEvol-SwXw-vary-mw_freq-2012-01-18-113453Uno3pi449cycles.mat';
+name{3} = '1DExp-seq-RotaryEchoCompleteEvol-SwXw-vary-mw_freq-2012-01-19-145847Uno3pip475cycles.mat';
+name{4} = '1DExp-seq-RotaryEchoCompleteEvol-SwXw-vary-mw_freq-2012-01-18-072131Uno3pi490cycles.mat';
+name{5} = '1DExp-seq-RotaryEchoCompleteEvol-SwXw-vary-mw_freq-2012-01-18-155453Uno3pi4100cyclesnotverygood.mat';
+
+a = 1e-6*[1.5, 2, 3, 3.5, 4];
+b = 1e-6*[0.5, 1, 2, 3, 3.5];
+c = 1e-6*[2, 3, 4, 4, 4.5];
+
+for aux = 1:1:5
+    
+    clear Stadevi diffe signal rabi lowref oneref zeroref w array_pos arrp Stadevibestfitsignal deriva pbest
+    load(name{aux});
+
+rabi = Scan.ExperimentData{1}{1};
+lowref = Scan.ExperimentData{1}{2};
+oneref = Scan.ExperimentData{1}{3};
+zeroref = Scan.ExperimentData{1}{4};
+w = Scan.vary_begin:((Scan.vary_end -Scan.vary_begin)/(Scan.vary_points-1)):Scan.vary_end;
+rabinorm = (rabi - oneref)./(zeroref - oneref); %rabi normalized
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% % error propagation for the signal calculated before moving average
+% deltaA = std(zeroref);
+% deltaB = std(oneref);
+% deltaDbar = sqrt(deltaA^2*((oneref - rabi)./(zeroref - oneref).^2).^2 + deltaB^2*((1./(oneref - zeroref) + (rabi - oneref)./(zeroref - oneref).^2)).^2)
+% %deltaDbar is the standard deviation for the normalized signal
+% 
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% with moving average
+%comment if not wanted
+lagpts = 10;
+one1ma = tsmovavg(oneref, 's', lagpts);
+one1ma = one1ma(lagpts:1:end);
+zero1ma = tsmovavg(zeroref, 's', lagpts);
+zero1ma = zero1ma(lagpts:1:end);
+rabima = tsmovavg(rabi, 's', lagpts);
+rabima = rabima(lagpts:1:end);
+rabinorm2 = (rabima - one1ma)./(zero1ma - one1ma); %rabi normalized
+%all vectors -lagpts long
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% error propagation for the signal calculated AFTER moving average
+deltaA = std(zero1ma);
+deltaB = std(one1ma);
+deltaDbar = sqrt(deltaA^2*((one1ma - rabima)./(zero1ma - one1ma).^2).^2 + deltaB^2*((1./(one1ma - zero1ma) + (rabima - one1ma)./(zero1ma - one1ma).^2)).^2)
+%deltaDbar is the standard deviation for the normalized signal
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+figure(120); 
+plot(w,rabinorm,'b',w(floor(lagpts/2):1:end-floor(lagpts/2)),rabinorm2,'r*')
+
+rabinorm = rabinorm2;
+w = w(floor(lagpts/2):1:end-floor(lagpts/2));
+
+%only uncomment if error prop calculated BEFORE moving average
+%deltaDbar = deltaDbar(lagpts:1:end);
+
+% end moving average; fit and numerical are going to be done with mov avg
+% signal
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+figure(12); 
+plot(w,rabinorm)
+hold on
+myfun = @(p, w) p(1) * cos(2*pi*p(2)*(p(3) - w)) + p(4) + p(5)*cos(2*pi*p(2)*(p(6) + (p(3) - w))) + p(7)*cos(2*pi*p(2)*(p(6) - (p(3) - w)));
+%p(1) amp
+%p(2) freq of osci
+%p(3) reson freq
+%p(4) offset
+%p(5) amp
+%p(6) hyperfine
+%p(7) amp
+% initial values 
+pinit = [0.2, a(aux), 3.157e9,mean(rabinorm), 0.2, 2.1e6, 0.2];
+% bounds for fitting parameters 
+LB = [0.1,   b(aux),      3.1565e9,     0.1,  0.1, 1.9e6, 0.1];
+UB = [0.4,    c(aux),       3.1575e9,     0.9,  0.4, 2.4e6, 0.4];
+[pbest,delta_p]=easyfit(w, rabinorm, pinit, myfun, LB, UB);
+hold off
+
+%ANALYTICAL
+bestfitsignal = pbest(1) * cos(2*pi*pbest(2)*(pbest(3) - w)) + pbest(4) + pbest(5)*cos(2*pi*pbest(2)*(pbest(6) + (pbest(3) - w))) + pbest(7)*cos(2*pi*pbest(2)*(pbest(6) - (pbest(3) - w)));
+Stadevibestfitsignal = sqrt(bestfitsignal.*(1-bestfitsignal));
+deriva = pbest(1)*2*pi*pbest(2)*sin(2*pi*pbest(2)*(pbest(3)-w)) + pbest(5)*2*pi*pbest(2)*sin(2*pi*pbest(2)*(pbest(6) + (pbest(3)-w))) - pbest(7)*2*pi*pbest(2)*sin(2*pi*pbest(2)*(pbest(6) - (pbest(3)-w)));
+[fulletaA(aux), array_pos] = min((Stadevibestfitsignal./abs(deriva))*sqrt(IntT(aux)));
+maxvectorfulletaA(aux) = w(array_pos);  
+
+figure(34)
+plot(w,(((Stadevibestfitsignal./abs(deriva))*sqrt(IntT(aux)))))
+hold on
+hline1 = line([pbest(3) ;pbest(3)],[0 ;max((((Stadevibestfitsignal./abs(deriva))*sqrt(IntT(aux)))))]);
+set(hline1,'Color','r');
+hline2 = line([pbest(3)+0.5/pbest(2) ;pbest(3)+0.5/pbest(2)],[0 ;max((((Stadevibestfitsignal./abs(deriva))*sqrt(IntT(aux)))))]);
+set(hline2,'Color','r');
+set(hline2,'LineStyle','--');
+hline3 = line([pbest(3)-0.5/pbest(2) ;pbest(3)-0.5/pbest(2)],[0 ;max((((Stadevibestfitsignal./abs(deriva))*sqrt(IntT(aux)))))]);
+set(hline3,'Color','r');
+set(hline3,'LineStyle','--');
+
+[min_diff,arrayposresw] = min(abs(pbest(3)-w)); %position of resonance
+[min_diff,array_posmaxw] = min(abs((pbest(3)+0.5/pbest(2))-w));
+[min_diff,array_posminw] = min(abs((pbest(3)-0.5/pbest(2))-w));
+ARR = (((Stadevibestfitsignal./abs(deriva))*sqrt(IntT(aux))));
+if array_posmaxw > length(ARR)
+    array_posmaxw = length(ARR);
+end
+[myminANA(aux),array_poschosenw] = min(ARR(array_posminw:1:array_posmaxw));
+plot(w(array_poschosenw+array_posminw-1),ARR(array_poschosenw+array_posminw-1),'*')
+hold off
+
+
+% if aux == 1
+%  ww35 = w;
+%  ss35 = rabinorm;
+%  ff35 = bestfitsignal;
+%  rr35 = arrayposresw;
+%  save('35cycles3pi4.mat','ww35','ss35','ff35','rr35')
+% end
+% if aux == 2
+%  ww49 = w;
+%  ss49 = rabinorm;
+%  ff49 = bestfitsignal;
+%  rr49 = arrayposresw;
+%  save('49cycles3pi4.mat','ww49','ss49','ff49','rr49')
+% end
+% if aux == 3
+%  ww75 = w;
+%  ss75 = rabinorm;
+%  ff75 = bestfitsignal;
+%  rr75 = arrayposresw;
+%  save('75cycles3pi4.mat','ww75','ss75','ff75','rr75')
+% end
+% if aux == 4
+%  ww90 = w;
+%  ss90 = rabinorm;
+%  ff90 = bestfitsignal;
+%  rr90 = arrayposresw;
+%  save('90cycles3pi4.mat','ww90','ss90','ff90','rr90')
+% end
+% if aux == 5
+%  ww100 = w;
+%  ss100 = rabinorm;
+%  ff100 = bestfitsignal;
+%  rr100 = arrayposresw;
+%  save('100cycles3pi4.mat','ww100','ss100','ff100','rr100')
+% end
+
+%%%%%%%%%%%%%%%%%%%%%%
+%standard deviation for the sensitivity, calculated at the chosen w
+stanANA = sqrt( (  ( (1 - 2*bestfitsignal)./(2*sqrt(bestfitsignal.*(1-bestfitsignal)))  )  .* (1./(deriva) ) ).^2   .*    (deltaDbar).^2  );
+vectstANA(aux) = stanANA(array_poschosenw+array_posminw-1);
+
+%NUMERICAL
+Stadevi = sqrt(rabinorm.*(1-rabinorm));
+Stadevi = Stadevi(2:1:end); %Stadevi(1:1:end-1);
+diffe = diff(rabinorm)./diff(w);
+[fulletaN(aux), array_pos] = min((Stadevi./abs(diffe))*sqrt(IntT(aux)));
+maxvectorfulletaN(aux) = w(array_pos); 
+
+figure(33)
+plot(w(1:1:end-1),(((Stadevi./abs(diffe))*sqrt(IntT(aux)))))
+hold on
+hline1 = line([pbest(3) ;pbest(3)],[0 ;max((((Stadevi./abs(diffe))*sqrt(IntT(aux)))))]);
+set(hline1,'Color','r');
+hline2 = line([pbest(3)+0.5/pbest(2) ;pbest(3)+0.5/pbest(2)],[0 ;max((((Stadevi./abs(diffe))*sqrt(IntT(aux)))))]);
+set(hline2,'Color','r');
+set(hline2,'LineStyle','--');
+hline3 = line([pbest(3)-0.5/pbest(2) ;pbest(3)-0.5/pbest(2)],[0 ;max((((Stadevi./abs(diffe))*sqrt(IntT(aux)))))]);
+set(hline3,'Color','r');
+set(hline3,'LineStyle','--');
+
+[min_diff,arrayposresw] = min(abs(pbest(3)-w)); %position of resonance
+[min_diff,array_posmaxw] = min(abs((pbest(3)+0.5/pbest(2))-w)); %+1 instead of +0.5
+[min_diff,array_posminw] = min(abs((pbest(3)-0.5/pbest(2))-w)); %-1 instead of -0.5
+ARR = (((Stadevi./abs(diffe))*sqrt(IntT(aux))));
+if array_posmaxw > length(ARR)
+    array_posmaxw = length(ARR);
+end
+[myminNUM(aux),array_poschosenw] = min(ARR(array_posminw:1:array_posmaxw-1)); %put -1 at end
+plot(w(array_poschosenw+array_posminw-1),ARR(array_poschosenw+array_posminw-1),'*')
+hold off
+
+%%%%%%%%%%%%%%%%%%%%%%
+%standard deviation for the sensitivity, calculated at the chosen w
+stanNUM = sqrt( (  ( (1 - 2*rabinorm(2:1:end))./(2*sqrt(rabinorm(2:1:end).*(1-rabinorm(2:1:end))))  )  .* (1./(diffe) ) ).^2   .*    (deltaDbar(2:1:end)).^2  );
+vectstNUM(aux) = stanNUM(array_poschosenw+array_posminw-1);
+end
+
+figure(67)
+subplot(3,1,1)
+plot(IntT/1e-6,fulletaA,'ro',IntT/1e-6,fulletaN,'bo',IntT/1e-6,myminANA,'r*',IntT/1e-6,myminNUM,'b*')
+title('full sensitivity eta = stdev / derivative * sqrt(T) [sqrt(Hz)], red fit, blue num // o whole range, * 1 wavelength')
+xlabel('\mus')
+%axis([44 170 0 50])
+subplot(3,1,2)
+plot(IntT/1e-6,fulletaA/(28024.9540*10^6)*10^9,'ro',IntT/1e-6,fulletaN/(28024.9540*10^6)*10^9,'bo',IntT/1e-6,myminANA/(28024.9540*10^6)*10^9,'r*',IntT/1e-6,myminNUM/(28024.9540*10^6)*10^9,'b*')
+title('full sensitivity eta = stdev / derivative * sqrt(T) [nT/sqrt(Hz)], red fit, blue num // o whole range, * 1 wavelength')
+subplot(3,1,3)
+errorbar(IntT/1e-6,myminANA/(28024.9540*10^6)*10^9,vectstANA/(28024.9540*10^6)*10^9,'r')
+hold on
+errorbar(IntT/1e-6,myminNUM/(28024.9540*10^6)*10^9,vectstNUM/(28024.9540*10^6)*10^9,'b')
+hold off
+title('full sensitivity eta = stdev / derivative * sqrt(T) [nT/sqrt(Hz)], red fit, blue num, with std dev, 1 wavelength')
+xlabel('Rotary pi // 20 lagpts // error propag calculated after moving avg of raw signal // @ chosen w of min eta')
+
+% error propagation:
+% error propagation for the normalizing; 
+% error propagation for the function eta = std(signal)/deriv(S,w) 
+
+
+%to plot 3pi/4
+
+figure(77)
+hold on
+errorbar(IntT/1e-6,myminNUM/(28024.9540*10^6)*10^9,vectstNUM/(28024.9540*10^6)*10^9,'Color','r','LineStyle','none','Marker','*')
+axis([1 10 0 1.2*max(vectstNUM/(28024.9540*10^6)*10^9)])
+%plot(IntT/1e-6,myminNUM/(28024.9540*10^6)*10^9,'*b')
+hold on
+%hold off
+%axis([min(IntT/1e-6) max(IntT/1e-6) 0 max(myminNUM/(28024.9540*10^6)*10^9)])
+title('full sensitivity eta = stdev / derivative * sqrt(T) [nT/sqrt(Hz)],with std dev, 1 wavelength')
+xlabel('Rotary pi // 20 lagpts // error propag calculated after moving avg of raw signal // @ chosen w of min eta')
+legend('3pi/4')
+
+% 
+% %errorbar(time1,sig1,err1,'Color','b','LineStyle','none','Marker','*')
+% axis([1.8 10 0 500])
+% 
+
+
+C = 0.05;
+close all
+figure(97)
+load('stuff.mat')
+hold on
+plot(time1,sig1,'bo')
+hold on
+plot(IntT/1e-6,myminNUM/(28024.9540*10^6)*10^9,'rs')
+hold on
+tempi = 1e-6:0.1e-6:10e-6;
+ plot(tempi/1e-6,1./sqrt(tempi)/4/C/(28024.9540*10^6)*10^9,'b')
+ hold on
+ H = (3*pi/4)/2/pi/(1-cos(3*pi/4))/C./sqrt(tempi);
+ plot(tempi/1e-6,H/(28024.9540*10^6)*10^9,'r')
+
+ylabel('Sensitivity (nT/\surd Hz)','FontSize',20)
+xlabel('Interrogation time (\mus)','FontSize',20)
+AX = legend('\pi-RE', '3\pi/4-RE');
+LEG = findobj(AX,'type','text');
+set(LEG,'FontSize',20)
+hold off
+%axis([1 10 0 20])
+ hold on
+ 
+ jkkjjj
+ 
+ close all
+
+ 
+load('stuff.mat')
+figure(97)
+hold on
+errorbar(time1,sig1,err1,'bo')
+hold on
+errorbar(IntT/1e-6,myminNUM/(28024.9540*10^6)*10^9,vectstNUM/(28024.9540*10^6)*10^9,'rs')
+hold on
+
+C = 0.05;
+tempi = 1e-6:0.1e-6:10e-6;
+ plot(tempi/1e-6,1./sqrt(tempi)/4/C/(28024.9540*10^6)*10^9,'b')
+ hold on
+ H = (3*pi/4)/2/pi/(1-cos(3*pi/4))/C./sqrt(tempi);
+ plot(tempi/1e-6,H/(28024.9540*10^6)*10^9,'r')
+ hold on
+axis([1 10 0 200])
+ylabel('Sensitivity (nT/\surd Hz)','FontSize',20)
+
+xlabel('Interrogation time (\mus)','FontSize',20)
+AX = legend('\pi-RE', '3\pi/4-RE');
+LEG = findobj(AX,'type','text');
+set(LEG,'FontSize',20)
+
+% %TEST
+% close all
+% figure(97)
+% load('stuff.mat')
+% hold on
+% plot(time1,sig1,'bo')
+% hold on
+% plot(IntT/1e-6,myminNUM/(28024.9540*10^6)*10^9,'rs')
+% hold on
+% ylabel('Sensitivity (nT/\surd Hz)','FontSize',20)
+% 
+% xlabel('Interrogation time (\mus)','FontSize',20)
+% AX = legend('\pi-RE', '3\pi/4-RE');
+% LEG = findobj(AX,'type','text');
+% set(LEG,'FontSize',20)
+% hold off
+%  hold on
+%  tem = 1e-6:0.1e-6:10e-6;
+%  plot(tem,1./sqrt(tem),'k')
+%  
