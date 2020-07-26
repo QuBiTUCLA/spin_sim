@@ -63,7 +63,7 @@ if __name__ == "__main__":
     #     c_opt = tem
 
     c_opt = p
-    L = liouvillian(h_10st(a, theta=np.pi/4., phi=np.pi/4.), c_opt)
+    L = liouvillian(h_10st(a, b0=1.0, theta=np.pi/4., phi=np.pi/4.), c_opt)
     tlist = np.linspace(0, 10, 100)
     result = mesolve(L, rho_0, tlist, [], [])
     print(result.states[-1])

@@ -33,13 +33,13 @@ def log(msg, l=1, end="\n", logfile=None):
             f.write(tempstr)
 
 
-def h_10st(a, theta, phi):
+def h_10st(a, b0, theta, phi):
 
     """The Hamiltonian for the theory developed in paper by
     Timmel et al.: https://doi.org/10.1080/00268979809483134"""
 
     # geomagnetic filed in micro-tesla
-    b = 47.0 * np.array([np.sin(theta) * np.cos(phi), np.sin(theta) * np.sin(phi), np.cos(theta)])
+    b = b0 * np.array([np.sin(theta) * np.cos(phi), np.sin(theta) * np.sin(phi), np.cos(theta)])
 
     h_hyp = a[0] * (tensor(tensor(sigmax(), qeye(2)), sigmax())) + a[1] * (tensor(tensor(sigmay(), qeye(2)), sigmay())) + \
             a[2] * (tensor(tensor(sigmaz(), qeye(2)), sigmaz()))
