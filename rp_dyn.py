@@ -124,6 +124,6 @@ if __name__ == "__main__":
         l0 += 1
 
     pickle.dump([result_S, result_S_formula, pops_tot, B0_arr, theta_arr, phi, a[0], a[1], a[2], k[0], k[1], tfinal,
-                 timedetail, rho0], open("Data_" + rho0_description + ".p", "wb"))
+                 timedetail, rho0], open("Data_" + rho0_description[1] + ".p", "wb"))
 
     print("Done.")

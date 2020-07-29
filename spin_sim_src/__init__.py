@@ -41,24 +41,32 @@ def build_Hamiltonian(a, b0, theta, phi):
     Timmel et al.: https://doi.org/10.1080/00268979809483134"""
 
     # Spin operators
-    S1_op = np.array(
-        [tensor(sigmax(), qeye(2), qeye(2)), tensor(sigmay(), qeye(2), qeye(2)), tensor(sigmaz(), qeye(2), qeye(2))])
-    S2_op = np.array(
-        [tensor(qeye(2), sigmax(), qeye(2)), tensor(qeye(2), sigmay(), qeye(2)), tensor(qeye(2), sigmaz(), qeye(2))])
-    nucl = np.array(
-        [tensor(qeye(2), qeye(2), sigmax()), tensor(qeye(2), qeye(2), sigmay()), tensor(qeye(2), qeye(2), sigmaz())])
+    # S1_op = np.array(
+    #     [tensor(sigmax(), qeye(2), qeye(2)), tensor(sigmay(), qeye(2), qeye(2)), tensor(sigmaz(), qeye(2), qeye(2))])
+    # S2_op = np.array(
+    #     [tensor(qeye(2), sigmax(), qeye(2)), tensor(qeye(2), sigmay(), qeye(2)), tensor(qeye(2), sigmaz(), qeye(2))])
+    # nucl = np.array(
+    #     [tensor(qeye(2), qeye(2), sigmax()), tensor(qeye(2), qeye(2), sigmay()), tensor(qeye(2), qeye(2), sigmaz())])
 
     # geomagnetic field
     gyros = 28.0e9  # Hz/T
     b = gyros * b0 * np.array([np.sin(theta) * np.cos(phi), np.sin(theta) * np.sin(phi), np.cos(theta)])
 
-    S2_mod_op = np.array([a[0] * tensor(qeye(2), sigmax(), qeye(2)), a[1] * tensor(qeye(2), sigmay(), qeye(2)),
-                          a[2] * tensor(qeye(2), sigmaz(), qeye(2))])
+    # S2_mod_op = np.array([a[0] * tensor(qeye(2), sigmax(), qeye(2)), a[1] * tensor(qeye(2), sigmay(), qeye(2)),
+    #                       a[2] * tensor(qeye(2), sigmaz(), qeye(2))])
+    #
+    # h_zeem = np.dot(b, 1.0 / 2.0 * (S1_op + S2_op))
+    #
+    # h_hyp = np.dot(1.0 / 2.0 * nucl, 1.0 / 2.0 * S2_mod_op)
 
-    h_zeem = np.dot(b, 1.0 / 2.0 * (S1_op + S2_op))
-
-    h_hyp = np.dot(1.0 / 2.0 * nucl, 1.0 / 2.0 * S2_mod_op)
-
+    h_hyp = a[0] * (tensor(tensor(sigmax(), qeye(2)), sigmax())) + \
+            a[1] * (tensor(tensor(sigmay(), qeye(2)), sigmay())) + \
+            a[2] * (tensor(tensor(sigmaz(), qeye(2)), sigmaz()))
+    h_hyp = 1./4. * h_hyp
+    h_zeem = b[0] * (tensor(tensor(qeye(2), sigmax()), qeye(2)) + tensor(tensor(qeye(2), qeye(2)), sigmax())) + \
+             b[1] * (tensor(tensor(qeye(2), sigmay()), qeye(2)) + tensor(tensor(qeye(2), qeye(2)), sigmay())) + \
+             b[2] * (tensor(tensor(qeye(2), sigmaz()), qeye(2)) + tensor(tensor(qeye(2), qeye(2)), sigmaz()))
+    h_zeem = 1./2. * h_zeem
     h = h_hyp + h_zeem
     return h
 
